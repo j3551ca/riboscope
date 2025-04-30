@@ -1,8 +1,6 @@
-# amplicon-consensus
+# riboscope
 
-A simple pipeline for generating a consensus sequence from amplicon-based libraries.
-
-This pipeline is intended as a simple and generic tool for exploring and assessing amplicon-based library preparations. It is not intended to provide final outputs for any specific genomic assay.
+This Nextflow pipeline is used to monitor for mutations that may confer AMR in bacterial ribosomal repeats, specifically the 16S and 23S rRNA genes of *Treponema pallidum* subsp. *pallidum*, the etiological agent of syphilis. This workflow calls mutations from reference-guided assemblies of short paired-end sequence reads from amplicon-based libraries. 
 
 This pipeline allows users to quickly and simply assess:
 
