@@ -1,12 +1,29 @@
 # riboscope
 
-This Nextflow pipeline is used to monitor for mutations that may confer AMR in bacterial ribosomal repeats, specifically the 16S and 23S rRNA genes of *Treponema pallidum* subsp. *pallidum*, the etiological agent of syphilis. This workflow calls mutations from reference-guided assemblies of short paired-end sequence reads from amplicon-based libraries. 
+This Nextflow pipeline monitors for mutations that may confer AMR in bacterial ribosomal repeats, specifically the 16S and 23S rRNA genes of *Treponema pallidum* subsp. *pallidum*, the etiological agent of syphilis. This workflow calls mutations in reference-guided assemblies of short paired-end reads sequenced from amplicon-based libraries. 
 
-This pipeline allows users to quickly and simply assess:
+## Quick-Start
 
-- Depth of coverage across the genome, or specific target region(s)
-- Quality of the alignment, including estimates of sequence error rates
-- Similarity between generated consensus sequence and a reference.
+```
+nextflow run BCCDC-PHL/riboscope \
+  -profile conda \
+  --cache ~/.conda/envs \
+  --fastq_input /path/to/fastq_files \
+  --ref /path/to/ref.fa \
+  --bed /path/to/primer_scheme.bed \
+  --outdir /path/to/output_dir
+```
+## Table of Contents
+  [Overview](#riboscope)<br>
+  [Quick-Start](#quick-start)<br>
+  [Workflow](#workflow)<br>
+  [Usage](#usage)<br>
+  [Input](#input)<br>
+  [Output](#output)<br>
+  [Parameters](#parameters)<br>
+  [References](#references)<br>
+
+## Workflow
 
 ```mermaid
 flowchart TD
@@ -69,9 +86,16 @@ flowchart TD
 
 
 
-## Inputs
+## Input
 
 
-## Outputs
+## Output
 
-### Coverage Plot
+
+## Parameters
+
+
+## References
+
+1. Jago, M.J., Soley, J.K., Denisov, S. et al. High-throughput method characterizes hundreds of previously unknown antibiotic resistance mutations. Nat Commun 16, 780 (2025). https://doi.org/10.1038/s41467-025-56050-2
+1. https://github.com/BCCDC-PHL/amplicon-consensus
