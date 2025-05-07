@@ -16,3 +16,6 @@ dependencies:
   - ivar=1.3
   - freebayes=1.3.7
   - mafft=7.525
+  #- bowtie2=2.5.4
+  - gatk4=4.6.2.0
+  - lofreq=2.1.5
