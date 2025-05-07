@@ -2,7 +2,7 @@ process fastp {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{json,csv}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{json,csv,html}", mode: 'copy'
 
     input:
     tuple val(sample_id), path(reads_1), path(reads_2)
@@ -10,6 +10,7 @@ process fastp {
     output:
     tuple val(sample_id), path("${sample_id}_fastp.json"), emit: fastp_json
     tuple val(sample_id), path("${sample_id}_fastp.csv"), emit: fastp_csv
+    tuple val(sample_id), path("${sample_id}_fastp.html"), emit: fastp_html
     tuple val(sample_id), path("${sample_id}_trimmed_R1.fastq.gz"), path("${sample_id}_trimmed_R2.fastq.gz"), emit: trimmed_reads
     tuple val(sample_id), path("${sample_id}_fastp_provenance.yml"), emit: provenance
 
@@ -23,12 +24,16 @@ process fastp {
     printf -- "        - parameter: --cut_tail\\n" >> ${sample_id}_fastp_provenance.yml
     printf -- "          value: null\\n" >> ${sample_id}_fastp_provenance.yml
 
-    fastp \
-	--cut_tail \
-	-i ${reads_1} \
-	-I ${reads_2} \
-	-o ${sample_id}_trimmed_R1.fastq.gz \
-	-O ${sample_id}_trimmed_R2.fastq.gz
+   
+
+    fastp -w ${task.cpus} \
+    -i ${reads_1} \
+    -I ${reads_2} \
+    -o ${sample_id}_trimmed_R1.fastq.gz \
+    -O ${sample_id}_trimmed_R2.fastq.gz\
+    --detect_adapter_for_pe \
+    --failed_out ${sample_id}_failed_reads.txt \
+    --html ${sample_id}_fastp.html 
 
     mv fastp.json ${sample_id}_fastp.json
     fastp_json_to_csv.py -s ${sample_id} ${sample_id}_fastp.json > ${sample_id}_fastp.csv
