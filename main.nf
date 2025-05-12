@@ -12,9 +12,14 @@ include { qualimap_bamqc }                 from './modules/amplicon_consensus.nf
 include { samtools_stats }                 from './modules/amplicon_consensus.nf'
 include { samtools_mpileup }               from './modules/amplicon_consensus.nf'
 include { amplicon_coverage }              from './modules/amplicon_consensus.nf'
-include { call_variants }                  from './modules/amplicon_consensus.nf'
-include { make_consensus }                 from './modules/amplicon_consensus.nf'
-include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
+include { ref_dict; 
+expected_snps; 
+recalibrate_bq; 
+lofreq_indel;
+lofreq_call}                                from './modules/variant_identification.nf'
+//include { call_variants }                  from './modules/amplicon_consensus.nf'
+//include { make_consensus }                 from './modules/amplicon_consensus.nf'
+//include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
 include { plot_coverage }                  from './modules/amplicon_consensus.nf'
 include { plot_amplicon_coverage }         from './modules/amplicon_consensus.nf'
 include { pipeline_provenance }            from './modules/provenance.nf'
@@ -94,11 +99,24 @@ workflow {
 
     samtools_stats(ch_primer_trimmed_alignment)
 
-    call_variants(ch_primer_trimmed_alignment.join(ch_ref))
+    ch_ref_dict = ref_dict(ch_ref)
+    ch_ref_dict.view()
 
-    make_consensus(ch_primer_trimmed_alignment)
+    expected_snps(ch_primer_trimmed_alignment.join(ch_indexed_ref))
 
-    align_consensus_to_ref(make_consensus.out.consensus.join(ch_indexed_ref))
+    recalibrate_bq(ch_primer_trimmed_alignment.join(ch_ref_dict.join(expected_snps.out.expected_vcf)))
+
+    lofreq_indel(recalibrate_bq.out.recalibrated_alignment.join(ch_indexed_ref.combine(ch_bed)))
+
+    lofreq_call(lofreq_indel.out.indel_alignment.join(ch_indexed_ref.combine(ch_bed)))
+
+
+
+    //call_variants(ch_primer_trimmed_alignment.join(ch_ref))
+
+    //make_consensus(ch_primer_trimmed_alignment)
+
+    //align_consensus_to_ref(make_consensus.out.consensus.join(ch_indexed_ref))
 
     // Collect multi-sample outputs
     if (params.collect_outputs) {
@@ -123,7 +141,7 @@ workflow {
 	    storeDir: "${params.outdir}"
 	)
     }
-
+/**
     // Collect Provenance
     // The basic idea is to build up a channel with the following structure:
     // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
@@ -139,5 +157,5 @@ workflow {
     ch_provenance = ch_provenance.join(align_consensus_to_ref.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
 
     collect_provenance(ch_provenance)
-  
+  */
 }
