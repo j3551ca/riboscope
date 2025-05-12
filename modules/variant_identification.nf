@@ -26,12 +26,13 @@ process ref_dict {
     tuple val(sample_id), path(ref)
 
     output:
-    tuple val(sample_id), path("ref_*{.fa,.dict}"), emit: ref_dict
+    tuple val(sample_id), path("ref_*{.fa,.dict,.fai}"), emit: ref_dict
 
     script:
     """
     cp ${ref} ref_.fa
     gatk CreateSequenceDictionary -R ref_.fa
+    samtools faidx ref_.fa
     """
 }
 
@@ -54,7 +55,7 @@ process expected_snps {
     -d 100000 \
     -f ${ref[0]} \
     -L 100000 \
-    ${alignment} \
+    ${alignment[0]} \
     | bcftools call \
     -mv -Ou \
     | bcftools view \
@@ -80,10 +81,10 @@ process recalibrate_bq {
     """
     # index feature file
     gatk IndexFeatureFile -I ${expected_vcf}
-    #gatk CreateSequenceDictionary -R ${ref[0]}
+   
     
     gatk BaseRecalibrator \
-    -I ${alignment} \
+    -I ${alignment[0]} \
     -R ${ref_dict[0]} \
     --known-sites ${expected_vcf} \
     -O ${sample_id}.recalibrated.data.table
@@ -91,7 +92,7 @@ process recalibrate_bq {
     #cannot pipe to next - tried
 
     gatk ApplyBQSR \
-    -I ${alignment}\
+    -I ${alignment[0]}\
     -R ${ref_dict[0]} \
     --bqsr-recal-file ${sample_id}.recalibrated.data.table \
     -O recalibrated.bam
@@ -100,8 +101,6 @@ process recalibrate_bq {
 
    samtools sort -o ${sample_id}.recalibrated.sorted.bam recalibrated.bam
    samtools index ${sample_id}.recalibrated.sorted.bam
-
-    
     """
 }
 
@@ -115,7 +114,7 @@ process lofreq_indel {
     tuple val(sample_id), path(recalibrated_alignment), path(ref), path(bed)
 
     output:
-    tuple val(sample_id), path("${sample_id}.dindel.bam"), emit: indel_alignment
+    tuple val(sample_id), path("${sample_id}.dindel.sorted{.bam,.bai}"), emit: indel_alignment
 
     script:
     """ 
@@ -125,6 +124,9 @@ process lofreq_indel {
     --ref ${ref[0]} \
     -o ${sample_id}.dindel.bam \
     ${recalibrated_alignment[0]}
+
+    samtools sort -o ${sample_id}.dindel.sorted.bam ${sample_id}.dindel.bam
+    samtools index ${sample_id}.dindel.sorted.bam
 
     """
 }
@@ -142,15 +144,13 @@ process lofreq_call {
     tuple val(sample_id), path("${sample_id}.lofreq.variants.vcf"), emit: minor_alleles
 
     script:
-    lofreq_threads = task.cpus - 2
     """
-    lofreq call-parallel \
-        --pp-threads ${lofreq_threads} \
+    lofreq call \
         -f ${ref[0]} \
         -o ${sample_id}.lofreq.variants.vcf \
         --sig 0.05 \
         --min-cov ${params.min_lofreq_cov} \
-        --call-indels ${indelqual_alignment}
+        --call-indels ${indelqual_alignment[0]}
     """
 }
 
@@ -161,19 +161,19 @@ process assemble_haplotypes {
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.", mode: "copy"
 
     input:
-    tuple val(sample_id), path(alignment), path(ref)
+    tuple val(sample_id), path(alignment), path(lofreq_vars), path(ref)
 
     output:
 
     script:
     """
     HAT \
-    -r CP048984.1.fna \
+    -r ${ref[0]} \
     CP048984.1 \
-    snp-var.vcf.gz \
-    short_reads_alignment.sorted.bam \
+    ${lofreq_vars} \
+    ${alignment} \
     long_reads_alignment.sorted.bam \
-    3 \
+    1 \
     haplotypes 
     """
 
