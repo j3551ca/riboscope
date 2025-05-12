@@ -69,24 +69,24 @@ process bwa_mem {
     printf -- "        - parameter: -m\\n"     >> ${sample_id}_bwa_mem_provenance.yml
     printf -- "          value: 1000M\\n"      >> ${sample_id}_bwa_mem_provenance.yml
 
-    #bwa mem \
-	#-t ${bwa_threads} \
-	#-R "@RG\\tID:${sample_id}\\tPL:illumina\\tSM:${sample_id}" \
-	#${ref[0]} \
-	#${reads_1} \
-	#${reads_2} \
-    #| samtools view -@ 2 -h \
-	#| samtools sort -@ 2 -l 0 -m 1000M \
-	#-o ${sample_id}.bam
+    bwa mem \
+	-t ${bwa_threads} \
+	-R "@RG\\tID:${sample_id}\\tPL:illumina\\tSM:${sample_id}" \
+	${ref[0]} \
+	${reads_1} \
+	${reads_2} \
+    | samtools view -@ 2 -h \
+	| samtools sort -@ 2 -l 0 -m 1000M \
+	-o ${sample_id}.bam
 
-    minimap2 \
-    -ax sr \
-    -t ${bwa_threads} \
-    ${ref[0]} \
-    ${reads_1} \
-    ${reads_2} \
-    | samtools sort -@ 2 -l 0 -m 1000M \
-	> ${sample_id}.bam
+    #minimap2 \
+    #-ax sr \
+    #-t ${bwa_threads} \
+    #${ref[0]} \
+    #${reads_1} \
+    #${reads_2} \
+    #| samtools sort -@ 2 -l 0 -m 1000M \
+	#> ${sample_id}.bam
 
    # bowtie2-build ${ref[0]} ${ref[0]}_bowtie2
 
