@@ -99,16 +99,16 @@ workflow {
 
     samtools_stats(ch_primer_trimmed_alignment)
 
-    ch_ref_dict = ref_dict(ch_ref)
+    ch_ref_dict = ref_dict(ch_ref).map{ id, files -> [id, files.sort { it.name.endsWith('.fa') ? 0 : 1 }] }
     ch_ref_dict.view()
 
-    expected_snps(ch_primer_trimmed_alignment.join(ch_indexed_ref))
+    expected_snps(ch_primer_trimmed_alignment.join(ch_ref_dict))
 
     recalibrate_bq(ch_primer_trimmed_alignment.join(ch_ref_dict.join(expected_snps.out.expected_vcf)))
 
-    lofreq_indel(recalibrate_bq.out.recalibrated_alignment.join(ch_indexed_ref.combine(ch_bed)))
+    lofreq_indel(recalibrate_bq.out.recalibrated_alignment.join(ch_ref_dict.combine(ch_bed)))
 
-    lofreq_call(lofreq_indel.out.indel_alignment.join(ch_indexed_ref.combine(ch_bed)))
+    lofreq_call(lofreq_indel.out.indel_alignment.join(ch_ref_dict.combine(ch_bed)))
 
 
 
