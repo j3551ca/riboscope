@@ -3,6 +3,8 @@ process fastp {
     tag { sample_id }
 
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{json,csv,html}", mode: 'copy'
+    // add temporarily
+    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_trimmed_R*"
 
     input:
     tuple val(sample_id), path(reads_1), path(reads_2)
@@ -37,5 +39,38 @@ process fastp {
 
     mv fastp.json ${sample_id}_fastp.json
     fastp_json_to_csv.py -s ${sample_id} ${sample_id}_fastp.json > ${sample_id}_fastp.csv
+    """
+}
+
+process detect_ribo_repeats {
+
+    tag { sample_id }
+    
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_rrna_counts.csv", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(search_seqs), path(reads_1), path(reads_2)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_rrna_counts.csv"), emit: ribo_rpt_counts
+
+
+    script:
+    """
+    counts=()
+    for seq in \$(awk '!/^>/' ${search_seqs});
+    do  
+       count=\$( seqkit grep \
+        -s \
+        -i \
+        -C \
+        -p "\${seq}" \
+        ${reads_1} \
+        ${reads_2} ) \
+        counts+=("\${count}")
+    done
+
+    IFS=','; echo "\${counts[*]}" > ${sample_id}_rrna_counts.csv
+    
     """
 }
