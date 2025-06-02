@@ -110,8 +110,6 @@ workflow {
 
     lofreq_call(lofreq_indel.out.indel_alignment.join(ch_ref_dict.combine(ch_bed)))
 
-    assemble_haplotypes(recalibrate_bq.out.recalibrated_alignment.join(lofreq_call.out.minor_alleles.join(ch_ref_dict)))
-
     //call_variants(ch_primer_trimmed_alignment.join(ch_ref))
 
     //make_consensus(ch_primer_trimmed_alignment)
