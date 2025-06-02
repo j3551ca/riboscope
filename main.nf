@@ -16,7 +16,8 @@ include { ref_dict;
 expected_snps; 
 recalibrate_bq; 
 lofreq_indel;
-lofreq_call}                                from './modules/variant_identification.nf'
+lofreq_call;
+assemble_haplotypes}                                from './modules/variant_identification.nf'
 //include { call_variants }                  from './modules/amplicon_consensus.nf'
 //include { make_consensus }                 from './modules/amplicon_consensus.nf'
 //include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
@@ -100,7 +101,6 @@ workflow {
     samtools_stats(ch_primer_trimmed_alignment)
 
     ch_ref_dict = ref_dict(ch_ref).map{ id, files -> [id, files.sort { it.name.endsWith('.fa') ? 0 : 1 }] }
-    ch_ref_dict.view()
 
     expected_snps(ch_primer_trimmed_alignment.join(ch_ref_dict))
 
@@ -110,7 +110,7 @@ workflow {
 
     lofreq_call(lofreq_indel.out.indel_alignment.join(ch_ref_dict.combine(ch_bed)))
 
-
+    assemble_haplotypes(recalibrate_bq.out.recalibrated_alignment.join(lofreq_call.out.minor_alleles.join(ch_ref_dict)))
 
     //call_variants(ch_primer_trimmed_alignment.join(ch_ref))
 

@@ -99,8 +99,8 @@ process recalibrate_bq {
 
     #cannot pipe to next - tried
 
-   samtools sort -o ${sample_id}.recalibrated.sorted.bam recalibrated.bam
-   samtools index ${sample_id}.recalibrated.sorted.bam
+    samtools sort -o ${sample_id}.recalibrated.sorted.bam recalibrated.bam
+    samtools index ${sample_id}.recalibrated.sorted.bam
     """
 }
 
@@ -158,26 +158,101 @@ process assemble_haplotypes {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.", mode: "copy"
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.haplotypes*", mode: "copy"
 
     input:
-    tuple val(sample_id), path(alignment), path(lofreq_vars), path(ref)
+    tuple val(sample_id), path(indelqual_alignment), path(lofreq_vars), path(ref)
 
     output:
 
     script:
     """
+    header=\$(head -n1 ${ref[0]} | cut -f1 -d ' ' )
+    ref_name=\${header/>/}
+
     HAT \
+    -rl 150 \
+    --haplotype_assembly True\
     -r ${ref[0]} \
-    CP048984.1 \
-    ${lofreq_vars} \
-    ${alignment} \
-    long_reads_alignment.sorted.bam \
-    1 \
-    haplotypes 
+    --chromosome_name "\${ref_name}" \
+    --vcf_file ${lofreq_vars} \
+    --short_read_alignment ${indelqual_alignment[0]} \
+    --ploidy 1 \
+    --output "${sample_id}.haplotypes" 
+
+    #too slow
+    savage \
+    --ref /home/jess.cal/syphilis/test_output/illumina/amr_ribo_rpts/bwa_ref_types/ribo_rpt_1/riboscope_test/TR13116/ref.fa \
+    -p1 TR13116_trimmed_R1.fastq \
+    -p2 TR13116_trimmed_R2.fastq \
+    -m 200 \
+    --split 2 \
+    --revcomp
+
+    fc-virus \
+    -k 100 \
+    -p \
+    -t fq \
+    --left TR13116_trimmed_R1.fastq\
+    --right TR13116_trimmed_R2.fastq
+
+    shorah amplicon \
+    -b TR13116.mapped.primertrimmed.sorted.bam \
+    -f ref.fa \
+    -r NC_000919.1_-_TpRiboCore1:1-100 #window slightly less than read length of 150
+
+    # this one:
+    shorah shotgun \
+    -b TR13116.mapped.primertrimmed.sorted.bam \
+    -f ref.fa \
+    -r NC_000919.1_-_TpRiboCore1:4000-5000 \
+    -w 120 \
+    -c 0 \
+    -x 1000000
+
+    haploflow \
+    --read-file ./TR13116_combined.fastq \
+    --out test \
+    --log test/log
+
     """
 
 }
+
+process map_contigs {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(contigs), path(ref)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.contigs.sorted{.bam,.bai}")
+
+    script:
+    """
+    minimap2 \
+    -a -x asm5 \
+    ${ref} \
+    contigs_stage_c.fasta \
+    > mapped_contigs.sam
+
+    samtools sort -o ${sample_id}.contigs.sorted.bam mapped_contigs.sam
+    samtools index ${sample_id}.contigs.sorted.bam
+
+    #extract contigs overlap in 16S region
+    samtools view -L 16S_region.bed TR13116_minimap_contigs.bam \
+    | cut -f1 \
+    | sort -u \
+    | seqkit grep -f - contigs_stage_c.fasta \
+    > 16S_contigs.fasta
+
+
+    """
+}
+
 
 process call_variants {
 
