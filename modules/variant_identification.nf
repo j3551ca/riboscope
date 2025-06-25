@@ -94,6 +94,7 @@ process recalibrate_bq {
     gatk ApplyBQSR \
     -I ${alignment[0]}\
     -R ${ref_dict[0]} \
+    --allow-missing-read-group \
     --bqsr-recal-file ${sample_id}.recalibrated.data.table \
     -O recalibrated.bam
 
