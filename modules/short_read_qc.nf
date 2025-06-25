@@ -49,7 +49,7 @@ process detect_ribo_repeats {
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_rrna_counts.csv", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(search_seqs), path(reads_1), path(reads_2)
+    tuple val(sample_id), path(reads_1), path(reads_2), path(search_seqs)
 
     output:
     tuple val(sample_id), path("${sample_id}_rrna_counts.csv"), emit: ribo_rpt_counts
