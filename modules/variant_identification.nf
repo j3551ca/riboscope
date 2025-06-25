@@ -154,6 +154,27 @@ process lofreq_call {
     """
 }
 
+process filter_lofreq {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.lofreq.formatted.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(lofreq_vcf)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.lofreq.formatted.vcf"), emit: formatted_vcf
+    
+    script:
+    """
+    bcftools query \
+    -f '%CHROM\t%POS\t%REF\t%ALT\t%AF\t%DP4\n' \
+    ${lofreq_vcf} \
+    | awk 'BEGIN{OFS="\t"; print "CHROM", "POS", "REF", "ALT", "AF", "DP4", "SAMPLE"} {print \$0, "${sample_id}"}' \
+    > ${sample_id}.lofreq.formatted.vcf
+    """
+}
 
 process map_contigs {
 
