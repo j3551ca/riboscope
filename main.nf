@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 include { hash_files as hash_ref }         from './modules/hash_files.nf'
 include { hash_files as hash_fastq }       from './modules/hash_files.nf'
 include { fastp }                          from './modules/short_read_qc.nf'
+include { detect_ribo_repeats }            from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
 include { trim_primer_sequences }          from './modules/amplicon_consensus.nf'
@@ -17,7 +18,7 @@ expected_snps;
 recalibrate_bq; 
 lofreq_indel;
 lofreq_call;
-assemble_haplotypes}                                from './modules/variant_identification.nf'
+filter_lofreq}                                from './modules/variant_identification.nf'
 //include { call_variants }                  from './modules/amplicon_consensus.nf'
 //include { make_consensus }                 from './modules/amplicon_consensus.nf'
 //include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
@@ -63,12 +64,19 @@ workflow {
 	error "BED file is required"
     }
 
+    if (params.search_seqs != 'NO_FILE') {
+	ch_search_seqs = Channel.fromPath(params.search_seqs)
+    } else {
+	error "File containing sequences to search is required"
+    }
+
     hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
     hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
     
     ch_indexed_ref = index_ref(ch_ref)
 
     fastp(ch_fastq)
+    detect_ribo_repeats(ch_fastq.combine(ch_search_seqs))
 
     if (! params.align_untrimmed_reads) {	
 	ch_reads_to_align = fastp.out.trimmed_reads
@@ -109,6 +117,8 @@ workflow {
     lofreq_indel(recalibrate_bq.out.recalibrated_alignment.join(ch_ref_dict.combine(ch_bed)))
 
     lofreq_call(lofreq_indel.out.indel_alignment.join(ch_ref_dict.combine(ch_bed)))
+
+    filter_lofreq(lofreq_call.out.minor_alleles)
 
     //call_variants(ch_primer_trimmed_alignment.join(ch_ref))
 
