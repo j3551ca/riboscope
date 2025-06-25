@@ -1,0 +1,239 @@
+process remove_chimeras {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(alignment), path(ref), path(bed)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.variants.vcf")
+
+    script:
+    """
+    
+    """
+}
+
+process ref_dict {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "ref.fa", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(ref)
+
+    output:
+    tuple val(sample_id), path("ref_*{.fa,.dict,.fai}"), emit: ref_dict
+
+    script:
+    """
+    cp ${ref} ref_.fa
+    gatk CreateSequenceDictionary -R ref_.fa
+    samtools faidx ref_.fa
+    """
+}
+
+process expected_snps {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.expected.snps.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(alignment), path(ref)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.expected.snps.vcf"), emit: expected_vcf
+
+    script:
+    """
+    bcftools mpileup \
+    -Ou \
+    -d 100000 \
+    -f ${ref[0]} \
+    -L 100000 \
+    ${alignment[0]} \
+    | bcftools call \
+    -mv -Ou \
+    | bcftools view \
+    -q 0.01 \
+    -o ${sample_id}.expected.snps.vcf
+
+    """
+}
+
+process recalibrate_bq {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(alignment), path(ref_dict), path(expected_vcf)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.recalibrated.sorted.bam*"), emit: recalibrated_alignment
+
+    script:
+    """
+    # index feature file
+    gatk IndexFeatureFile -I ${expected_vcf}
+   
+    
+    gatk BaseRecalibrator \
+    -I ${alignment[0]} \
+    -R ${ref_dict[0]} \
+    --known-sites ${expected_vcf} \
+    -O ${sample_id}.recalibrated.data.table
+    
+    #cannot pipe to next - tried
+
+    gatk ApplyBQSR \
+    -I ${alignment[0]}\
+    -R ${ref_dict[0]} \
+    --allow-missing-read-group \
+    --bqsr-recal-file ${sample_id}.recalibrated.data.table \
+    -O recalibrated.bam
+
+    #cannot pipe to next - tried
+
+    samtools sort -o ${sample_id}.recalibrated.sorted.bam recalibrated.bam
+    samtools index ${sample_id}.recalibrated.sorted.bam
+    """
+}
+
+process lofreq_indel {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.dindel.bam", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(recalibrated_alignment), path(ref), path(bed)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.dindel.sorted{.bam,.bai}"), emit: indel_alignment
+
+    script:
+    """ 
+    #needed if want indels in lofreq (does not work with just ApplyBQSR then lofreq call --call-indels)
+    lofreq indelqual \
+    --dindel \
+    --ref ${ref[0]} \
+    -o ${sample_id}.dindel.bam \
+    ${recalibrated_alignment[0]}
+
+    samtools sort -o ${sample_id}.dindel.sorted.bam ${sample_id}.dindel.bam
+    samtools index ${sample_id}.dindel.sorted.bam
+
+    """
+}
+
+process lofreq_call {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.lofreq.variants.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(indelqual_alignment), path(ref), path(bed)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.lofreq.variants.vcf"), emit: minor_alleles
+
+    script:
+    """
+    lofreq call \
+        -f ${ref[0]} \
+        -o ${sample_id}.lofreq.variants.vcf \
+        --sig 0.05 \
+        --min-cov ${params.min_lofreq_cov} \
+        --call-indels ${indelqual_alignment[0]}
+    """
+}
+
+process filter_lofreq {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.lofreq.formatted.vcf", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(lofreq_vcf)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.lofreq.formatted.vcf"), emit: formatted_vcf
+    
+    script:
+    """
+    bcftools query \
+    -f '%CHROM\t%POS\t%REF\t%ALT\t%AF\t%DP4\n' \
+    ${lofreq_vcf} \
+    | awk 'BEGIN{OFS="\t"; print "CHROM", "POS", "REF", "ALT", "AF", "DP4", "SAMPLE"} {print \$0, "${sample_id}"}' \
+    > ${sample_id}.lofreq.formatted.vcf
+    """
+}
+
+process map_contigs {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(contigs), path(ref)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.contigs.sorted{.bam,.bai}")
+
+    script:
+    """
+    minimap2 \
+    -a -x asm5 \
+    ${ref} \
+    contigs_stage_c.fasta \
+    > mapped_contigs.sam
+
+    samtools sort -o ${sample_id}.contigs.sorted.bam mapped_contigs.sam
+    samtools index ${sample_id}.contigs.sorted.bam
+
+    #extract contigs overlap in 16S region
+    samtools view -L 16S_region.bed TR13116_minimap_contigs.bam \
+    | cut -f1 \
+    | sort -u \
+    | seqkit grep -f - contigs_stage_c.fasta \
+    > 16S_contigs.fasta
+
+
+    """
+}
+
+
+process call_variants {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(alignment), path(ref)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.variants.tsv")
+
+    script:
+    """
+    samtools faidx ${ref}
+
+    samtools mpileup -aa -A -d ${params.max_depth} -B -Q 0 --reference ${ref} ${alignment[0]} \
+	| ivar variants \
+	-r ${ref} \
+	-m ${params.min_depth}  \
+	-q ${params.min_qual_for_variant_calling} \
+	-t ${params.ambiguous_allele_freq_threshold} \
+	-p ${sample_id}.variants
+    """
+}
