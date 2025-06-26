@@ -2,7 +2,7 @@ process fastp {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{json,csv,html}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{csv,html}", mode: 'copy'
     // add temporarily
     publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_trimmed_R*"
 
