@@ -212,7 +212,7 @@ process samtools_stats {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_samtools_stats*.{txt,tsv,csv}"
+    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_samtools_stats*.{tsv,csv}"
 
     input:
     tuple val(sample_id), path(alignment)
