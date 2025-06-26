@@ -2,8 +2,6 @@ process index_ref {
 
     tag { sample_id + ' / ' + ref_filename }
 
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "ref.fa"
-
     input:
     tuple val(sample_id), path(ref)
 
