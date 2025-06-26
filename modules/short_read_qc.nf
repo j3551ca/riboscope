@@ -2,7 +2,7 @@ process fastp {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp.{csv,html}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp*.{csv,txt}", mode: 'copy'
     // add temporarily
     publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_trimmed_R*"
 
@@ -34,8 +34,8 @@ process fastp {
     -o ${sample_id}_trimmed_R1.fastq.gz \
     -O ${sample_id}_trimmed_R2.fastq.gz\
     --detect_adapter_for_pe \
-    --failed_out ${sample_id}_failed_reads.txt \
-    --html ${sample_id}_fastp.html 
+    --failed_out ${sample_id}_fastp_failed_reads.txt 
+    #--html ${sample_id}_fastp.html 
 
     mv fastp.json ${sample_id}_fastp.json
     fastp_json_to_csv.py -s ${sample_id} ${sample_id}_fastp.json > ${sample_id}_fastp.csv
