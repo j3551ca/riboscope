@@ -3,8 +3,6 @@ process fastp {
     tag { sample_id }
 
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_fastp*.{csv,txt}", mode: 'copy'
-    // add temporarily
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_trimmed_R*"
 
     input:
     tuple val(sample_id), path(reads_1), path(reads_2)
