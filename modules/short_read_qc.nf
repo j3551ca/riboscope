@@ -57,6 +57,9 @@ process detect_ribo_repeats {
 
     script:
     """
+    seq_names=\$(grep "^>" ${search_seqs} | cut -d" " -f1 | sed 's/^>//' | paste -sd, -)
+    echo -e "sample_id,\${seq_names}" > ${sample_id}_rrna_counts.csv
+
     counts=()
     for seq in \$(awk '!/^>/' ${search_seqs});
     do  
@@ -70,7 +73,7 @@ process detect_ribo_repeats {
         counts+=("\${count}")
     done
 
-    IFS=','; echo "\${counts[*]}" > ${sample_id}_rrna_counts.csv
+    IFS=','; echo "${sample_id},\${counts[*]}" >> ${sample_id}_rrna_counts.csv
     
     """
 }

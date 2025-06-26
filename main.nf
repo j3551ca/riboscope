@@ -148,6 +148,13 @@ workflow {
 	    name: "${params.collected_outputs_prefix}_samtools_stats_summary.csv",
 	    storeDir: "${params.outdir}"
 	)
+
+    detect_ribo_repeats.out.ribo_rpt_counts.map{ it -> it[1] }.collectFile(
+	    keepHeader: true,
+	    sort: { it.text },
+	    name: "${params.collected_outputs_prefix}_rrna_counts.csv",
+	    storeDir: "${params.outdir}"
+	)
     }
 /**
     // Collect Provenance
