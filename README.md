@@ -11,6 +11,7 @@ nextflow run BCCDC-PHL/riboscope \
   --fastq_input /path/to/fastq_files \
   --ref /path/to/ref.fa \
   --bed /path/to/primer_scheme.bed \
+  --search_seqs /path/to/query/seq/multi.fasta \
   --outdir /path/to/output_dir
 ```
 ## Table of Contents
@@ -45,24 +46,26 @@ flowchart TD
 The following command can be used to run the pipeline:
 
 ```
-nextflow run BCCDC-PHL/amplicon-consensus \
+nextflow run BCCDC-PHL/riboscope \
   -profile conda \
   --cache ~/.conda/envs \
   --fastq_input /path/to/fastq_files \
   --ref /path/to/ref.fa \
   --bed /path/to/primer_scheme.bed \
+  --search_seqs /path/to/query/seq/multi.fasta \
   --outdir /path/to/output_dir
 ```
 
 By default, reads will be trimmed by fastp prior to alignment. To align the untrimmed reads instead, use the `--align_untrimmed_reads` parameter:
 
 ```
-nextflow run BCCDC-PHL/amplicon-consensus \
+nextflow run BCCDC-PHL/riboscope \
   -profile conda \
   --cache ~/.conda/envs \
   --fastq_input /path/to/fastq_files \
   --ref /path/to/ref.fa \
   --bed /path/to/primer_scheme.bed \
+  --search_seqs /path/to/query/seq/multi.fasta \
   --align_untrimmed_reads \
   --outdir /path/to/output_dir
 ```
@@ -87,13 +90,30 @@ flowchart TD
 
 
 ## Input
-
+| Input  | Parameter   |  Description   |  Notes  |
+|:----|:-----|:-----|:-----|
+| Paired-end sequencing reads |  `fastq_input`  | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).    |  none    |
+|Reference genome | `ref` |  Reference genome used to align reads to during guided assembly    |  none    |
+|BED file	 | `bed`  | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1)    |  none    |
+|MultiFASTA of query sequences | `search_seqs`  | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.     |  none    |
 
 ## Output
 
 
 ## Parameters
 
+| Parameter  | Description   |  Required   |  Default  |
+|:----|:-----|:-----|:-----|
+|`fastq_input` | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).   | yes    |  none    |
+|`outdir` | Absolute path to directory to write results to. | no    |  ./results    |
+|`ref` | Reference genome used to align reads to during guided assembly  | yes    |  none    |
+|`bed` | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1)   | yes    |  none    |
+|`search_seqs` | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.   | yes    |  none    |
+|`cache` | Directory to cache conda environments for future use.   | no    |  ./work/conda    |
+|`align_untrimmed_reads` | Skips read trimming by fastp. Allows alignment of raw untrimmed reads using bwa. | no    |  off    |
+|`min_depth` | Minimum number of reads covering a genomic position. | no    |  10    |
+|`collect_outputs` | Summarize outputs of multiple samples into one. | no    |  off    |
+|`collected_outputs_prefix` | Prefix to name multi-sample summary files with. | no    |  'collected'    |
 
 ## References
 
