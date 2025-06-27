@@ -33,6 +33,12 @@ def parse_qualimap_bamqc_genome_results(qualimap_bamqc_genome_results):
             if line.startswith('duplication rate'):
                 duplication_rate = line.split('=')[1].strip().replace('%', '')
                 qualimap_bamqc_genome_results_data['duplication_rate_percent'] = round(float(duplication_rate), 2)
+            if line.startswith('mean insert size'):
+                mean_insert_size = line.split('=')[1].strip().replace(',', '')
+                qualimap_bamqc_genome_results_data['mean_insert_size'] = int(float(mean_insert_size))
+            if line.startswith('std insert size'):
+                stdev_insert_size = line.split('=')[1].strip().replace(',', '')
+                qualimap_bamqc_genome_results_data['stdev_insert_size'] = int(float(stdev_insert_size))
             if line.startswith('mean coverageData'):
                 mean_coverage = line.split('=')[1].strip().strip('X').replace(',', '')
                 qualimap_bamqc_genome_results_data['mean_depth_coverage'] = round(float(mean_coverage), 2)
@@ -99,6 +105,8 @@ def main(args):
         'mapped_reads_with_deletion_percentage',
         'num_secondary_alignments',
         'duplication_rate_percent',
+        'mean_insert_size',
+        'stdev_insert_size',
         'proportion_genome_covered_over_5x',
         'proportion_genome_covered_over_10x',
         'proportion_genome_covered_over_20x',
