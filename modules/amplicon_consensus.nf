@@ -2,8 +2,6 @@ process index_ref {
 
     tag { sample_id + ' / ' + ref_filename }
 
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "ref.fa"
-
     input:
     tuple val(sample_id), path(ref)
 
@@ -40,7 +38,7 @@ process bwa_mem {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}.{bam,bam.bai}"
+    //publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}.{bam,bam.bai}"
 
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(ref)
@@ -147,7 +145,6 @@ process qualimap_bamqc {
     tag { sample_id }
 
     publishDir  "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_qualimap_alignment_qc.csv"
-    publishDir  "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_qualimap_genome_results.txt"
     publishDir  "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_qualimap_report.pdf"
 
     input:
@@ -212,7 +209,7 @@ process samtools_stats {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_samtools_stats*.{txt,tsv,csv}"
+    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_samtools_stats*.{tsv,csv}"
 
     input:
     tuple val(sample_id), path(alignment)
@@ -314,33 +311,6 @@ process amplicon_coverage {
 	-a amplicons.bed \
 	-b ${alignment[0]} \
 	>> ${sample_id}_amplicon_coverage.tsv
-    """
-}
-
-
-process call_variants {
-
-    tag { sample_id }
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(alignment), path(ref)
-
-    output:
-    tuple val(sample_id), path("${sample_id}.variants.tsv")
-
-    script:
-    """
-    samtools faidx ${ref}
-
-    samtools mpileup -aa -A -d ${params.max_depth} -B -Q 0 --reference ${ref} ${alignment[0]} \
-	| ivar variants \
-	-r ${ref} \
-	-m ${params.min_depth}  \
-	-q ${params.min_qual_for_variant_calling} \
-	-t ${params.ambiguous_allele_freq_threshold} \
-	-p ${sample_id}.variants
     """
 }
 

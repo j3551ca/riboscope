@@ -121,6 +121,7 @@ def plot_coverage(depths: pd.DataFrame, sample_name: str="Sample", threshold: in
     # Set the size of the plot based on the number of amplicons
     num_amplicons = depths.shape[0]
     fig.set_size_inches(0.5 * num_amplicons, 6)
+    fig.tight_layout(pad=2.0)
     
     return fig
 
