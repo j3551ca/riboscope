@@ -39,3 +39,19 @@ process collect_provenance {
     cat ${provenance_files} > ${sample_id}_\$(date +%Y%m%d%H%M%S)_provenance.yml
     """
 }
+
+process ANALYZE_EXECUTION_TRACE {
+
+    publishDir "${params.outdir}", pattern: "*_provenance.csv", mode: 'copy'
+
+    input:
+    path(trace_file)
+
+    output:
+    path("analyzed_trace.csv")
+
+    script:
+    """
+    analyze_trace.py --trace_file ${trace_file}
+    """
+}

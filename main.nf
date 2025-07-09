@@ -25,7 +25,7 @@ filter_lofreq}                                from './modules/variant_identifica
 include { plot_coverage }                  from './modules/amplicon_consensus.nf'
 include { plot_amplicon_coverage }         from './modules/amplicon_consensus.nf'
 include { pipeline_provenance }            from './modules/provenance.nf'
-include { collect_provenance }             from './modules/provenance.nf'
+include { ANALYZE_EXECUTION_TRACE }             from './modules/provenance.nf'
 
 workflow {
 
@@ -68,6 +68,12 @@ workflow {
 	ch_search_seqs = Channel.fromPath(params.search_seqs)
     } else {
 	error "File containing sequences to search is required"
+    }
+
+    if (params.provenance_yaml != 'NO_FILE') {
+	ch_template = Channel.fromPath(params.provenance_yaml)
+    } else {
+	error "Template yaml file for provenance is required"
     }
 
     hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
@@ -174,3 +180,39 @@ workflow {
     collect_provenance(ch_provenance)
   */
 }
+
+workflow.onComplete {   
+
+    /**
+    def traceFile = file("${params.outdir}/execution_trace.csv")
+    if (traceFile.exists()) {
+        ANALYZE_EXECUTION_TRACE(traceFile)
+    } else {
+        println "Trace file not found: ${traceFile}"
+    }
+*/
+
+def traceFile = "${params.outdir}/execution_trace.csv"
+def scriptFile = "${workflow.projectDir}/bin/analyze_trace.py"
+try {
+    if (new File(traceFile).exists() && new File(scriptFile).exists()) {
+        println "Running execution trace analysis..."
+        
+        def cmd = [scriptFile, "--trace_file", traceFile]
+        def proc = cmd.execute()
+        proc.waitFor()
+        
+        if (proc.exitValue() == 0) {
+            println proc.text
+        } else {
+            println "Analysis completed with warnings:"
+            println proc.err.text
+        }
+    } else {
+        println "Trace file or analysis script not found"
+    }
+} catch (Exception e) {
+    println "Failed to run trace analysis: ${e.message}"
+}
+    }
+    
