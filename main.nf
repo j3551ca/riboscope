@@ -155,6 +155,13 @@ workflow {
 	    name: "${params.collected_outputs_prefix}_rrna_counts.csv",
 	    storeDir: "${params.outdir}"
 	)
+
+    filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
+	    keepHeader: true,
+	    sort: { it.text },
+	    name: "${params.collected_outputs_prefix}_lofreq.vcf",
+	    storeDir: "${params.outdir}"
+	)
     }
 /**
     // Collect Provenance
