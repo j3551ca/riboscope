@@ -18,7 +18,8 @@ expected_snps;
 recalibrate_bq; 
 lofreq_indel;
 lofreq_call;
-filter_lofreq}                                from './modules/variant_identification.nf'
+filter_lofreq}                             from './modules/variant_identification.nf'
+include { collect_qc }                     from  './modules/sample_qc.nf'
 //include { call_variants }                  from './modules/amplicon_consensus.nf'
 //include { make_consensus }                 from './modules/amplicon_consensus.nf'
 //include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
@@ -127,41 +128,48 @@ workflow {
     //align_consensus_to_ref(make_consensus.out.consensus.join(ch_indexed_ref))
 
     // Collect multi-sample outputs
-    if (params.collect_outputs) {
-	fastp.out.fastp_csv.map{ it -> it[1] }.collectFile(
+    if (params.collect_outputs | params.apply_qc) {
+	aggregate_fastp = fastp.out.fastp_csv.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_fastp.csv",
 	    storeDir: "${params.outdir}"
 	)
 
-	qualimap_bamqc.out.alignment_qc.map{ it -> it[1] }.collectFile(
+	aggregate_bam = qualimap_bamqc.out.alignment_qc.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_qualimap_alignment_qc.csv",
 	    storeDir: "${params.outdir}"
 	)
 
-	samtools_stats.out.stats_summary_csv.map{ it -> it[1] }.collectFile(
+	aggregate_samtools = samtools_stats.out.stats_summary_csv.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_samtools_stats_summary.csv",
 	    storeDir: "${params.outdir}"
 	)
 
-    detect_ribo_repeats.out.ribo_rpt_counts.map{ it -> it[1] }.collectFile(
+    aggregate_counts = detect_ribo_repeats.out.ribo_rpt_counts.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_rrna_counts.csv",
 	    storeDir: "${params.outdir}"
 	)
 
-    filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
+    aggregate_snps = filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_lofreq.vcf",
 	    storeDir: "${params.outdir}"
 	)
+    }
+
+    if (params.apply_qc) {
+        collect_qc(aggregate_fastp.combine(aggregate_bam.combine(aggregate_counts.combine(aggregate_snps))))
+        //apply_qc()
+        //report_results()
+
     }
 /**
     // Collect Provenance
