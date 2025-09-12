@@ -1,21 +1,23 @@
 process collect_qc {
 
     tag { "sample QC" }
-    publishDir "${params.outdir}", pattern: "*.txt", mode: 'copy'
+    publishDir "${params.outdir}", pattern: "*.csv", mode: 'copy'
 
     input:
-    tuple path(read_results), path(alignment_results), path(rrna_counts), path(vcf_results)
+    tuple path(read_results), path(alignment_results), path(samtools_results), path(rrna_counts), path(vcf_results)
 
     output:
-    path("*.txt")
+    path("*.csv")
 
     script:
     """
-    collect_qc_results.py \
+    filter_qc.py \
     --fastp_qc ${read_results} \
     --bam_qc ${alignment_results} \
+    --samtools_stats ${samtools_results} \
     --amplicon_counts ${rrna_counts} \
-    --vcf_qc ${vcf_results}
+    --vcf_qc ${vcf_results} \
+    --min_count ${params.min_amplicon_count}
     """
 }
 
