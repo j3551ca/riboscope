@@ -58,6 +58,7 @@ def syphilis_amplicons(amplicon_counts_csv):
             amplicon_summary[new_col_med] = df[cols].median(axis=1)
             amplicon_summary[new_col_min] = df[cols].min(axis=1)
     amplicon_summary["sample_id"] = df["sample_id"]
+    amplicon_summary[["pos_str", "neg_str"]] = df[["pos_str", "neg_str"]]
 
     return(amplicon_summary, df) #df for heatmap, #amlicon_summary for merging with reads 
 
@@ -81,16 +82,16 @@ def define_qc_rules(reads_qc_df, amplicon_qc_df):
     #define vars
     gc_low =  df["gc_content_after_filtering"].mean(axis=0) - df["gc_content_after_filtering"].std() 
     gc_high = df["gc_content_after_filtering"].mean(axis=0) + df["gc_content_after_filtering"].std() 
-    read_length_low = (df["total_length"].mean())*0.75
-    read_length_high =  (df["total_length"].mean())*1.25
+    read_length_low = (df["average_length"].mode().iloc[0])*0.75
+    read_length_high =  (df["average_length"].mode().iloc[0])*1.25
     groups = ["rpt1_pool1_", "rpt1_pool2_", "rpt2_pool1_", "rpt2_pool2_"]
     amplicon_qc_median = [ prefix + "median" for prefix in groups ]
 
     #dictn of QC rules to apply to qc pd.df
     soft_fail_rules = {
-        "abnormal_gc": df["gc_content_after_filtering"] < gc_low | df["gc_content_after_filtering"] > gc_high,
-        "insufficient_cycles": df["read1_mean_length_after_filtering"] <= read_length_low | df["read2_mean_length_after_filtering"] <= read_length_low,
-        "excessive_cycles": df["read1_mean_length_after_filtering"] >= read_length_high | df["read2_mean_length_after_filtering"] <= read_length_high,
+        "abnormal_gc": (df["gc_content_after_filtering"] < gc_low) | (df["gc_content_after_filtering"] > gc_high),
+        "insufficient_cycles": ((df["read1_mean_length_after_filtering"] <= read_length_low) | (df["read2_mean_length_after_filtering"] <= read_length_low)),
+        "excessive_cycles": ((df["average_length"]!=0) & ((df["read1_mean_length_after_filtering"] >= read_length_high) | (df["read2_mean_length_after_filtering"] >= read_length_high))),
         "low_q20": df["q20_rate_after_filtering"] < 0.95,
         "low_q30": df["q30_rate_after_filtering"] < 0.85,
         "low_bq": df["average_quality"] < 30,
@@ -100,10 +101,11 @@ def define_qc_rules(reads_qc_df, amplicon_qc_df):
         "low_mapq": df["mean_mapping_quality"] < 50,
         "low_10X_breadth": df["proportion_genome_covered_over_10x"] < 0.85,
         "low_50X_breadth": df["proportion_genome_covered_over_50x"] < 0.85,
-        "secondary": df["number_secondary_alignments"] > 0,
-        "abnormal_amplicon_counts": df["pos_str"] < 100 or df["neg_str"] > 0,
+        "secondary": df["num_secondary_alignments"] > 0,
+        "abnormal_amplicon_counts": (df["pos_str"] < 100) | (df["neg_str"] > 0),
     }
 
+    #add instant fails here
     hard_fail_rules = {
         "no_amplicons_detected": (df[amplicon_qc_median] < 300).all(axis=1),
         "low_reads": df["num_mapped_reads"] < 100,
@@ -120,17 +122,17 @@ def define_qc_rules(reads_qc_df, amplicon_qc_df):
     soft_cols = list(soft_fail_rules.keys())
     hard_cols = list(hard_fail_rules.keys())
     flag_cols = soft_cols + hard_cols
-    df[flag_cols] = df[flag_cols].fillna(1)
+    df[flag_cols] = df[flag_cols].fillna(True)
 
     df["n_flags"] = df[flag_cols].sum(axis=1) #tally flags per sample - rowwise
-
     #collect key values/col names/flags as reason list to store in "flags" col per samp
     df["flags"] = df.apply(lambda rule: [col for col in flag_cols if rule[col]], axis=1)
-
     #final qc decision
-    df["qc_fail"] = (df["n_flags"] > 5) | df[hard_cols]
+    df["qc_fail"] = (df["n_flags"] > 5) | df[hard_cols].any(axis=1)
 
-    return(df)
+    exclusion_list = df[df["qc_fail"]]["sample_id"].tolist()
+
+    return(df, exclusion_list)
 
 
 #%%
