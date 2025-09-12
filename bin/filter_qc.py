@@ -69,13 +69,10 @@ def syphilis_amplicons(amplicon_counts_csv):
 #     amplicon_summary[pass_col] = (amplicon_summary[col] >= 300).astype(int)
 
 #%%
-
-def define_qc_rules(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
-                    min_pct_map, min_mq, min_10X, min_50X, max_secondary, min_pos_count, min_med_count):
-#%%
 import argparse
 
-def define_qc_rules(reads_qc_df, amplicon_qc_df):
+def define_qc_rules(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
+                    min_pct_map, min_mq, min_10X, min_50X, max_secondary, min_pos_count, min_med_count, max_qc_flags):
 
     df = reads_qc_df.merge(amplicon_qc_df, on="sample_id", how="left")
 
@@ -84,31 +81,30 @@ def define_qc_rules(reads_qc_df, amplicon_qc_df):
     gc_high = df["gc_content_after_filtering"].mean(axis=0) + df["gc_content_after_filtering"].std() 
     read_length_low = (df["average_length"].mode().iloc[0])*0.75
     read_length_high =  (df["average_length"].mode().iloc[0])*1.25
-    groups = ["rpt1_pool1_", "rpt1_pool2_", "rpt2_pool1_", "rpt2_pool2_"]
-    amplicon_qc_median = [ prefix + "median" for prefix in groups ]
+    amplicon_qc_median = [ col for col in amplicon_qc_df.columns if col.endswith("_median")]
 
     #dictn of QC rules to apply to qc pd.df
     soft_fail_rules = {
         "abnormal_gc": (df["gc_content_after_filtering"] < gc_low) | (df["gc_content_after_filtering"] > gc_high),
         "insufficient_cycles": ((df["read1_mean_length_after_filtering"] <= read_length_low) | (df["read2_mean_length_after_filtering"] <= read_length_low)),
         "excessive_cycles": ((df["average_length"]!=0) & ((df["read1_mean_length_after_filtering"] >= read_length_high) | (df["read2_mean_length_after_filtering"] >= read_length_high))),
-        "low_q20": df["q20_rate_after_filtering"] < 0.95,
-        "low_q30": df["q30_rate_after_filtering"] < 0.85,
-        "low_bq": df["average_quality"] < 30,
-        "low_depth": df["mean_depth_coverage"] < 100,
-        "low_mapped_paired": df["reads_mapped_and_paired"] < 1000,
-        "low_percent_mapped": df["percent_mapped_reads"] < 0.8,
-        "low_mapq": df["mean_mapping_quality"] < 50,
-        "low_10X_breadth": df["proportion_genome_covered_over_10x"] < 0.85,
-        "low_50X_breadth": df["proportion_genome_covered_over_50x"] < 0.85,
-        "secondary": df["num_secondary_alignments"] > 0,
-        "abnormal_amplicon_counts": (df["pos_str"] < 100) | (df["neg_str"] > 0),
+        "low_q20": df["q20_rate_after_filtering"] < min_q20,
+        "low_q30": df["q30_rate_after_filtering"] < min_q30,
+        "low_bq": df["average_quality"] < min_bq,
+        "low_depth": df["mean_depth_coverage"] < min_depth,
+        "low_mapped_paired": df["reads_mapped_and_paired"] < min_map_pair,
+        "low_percent_mapped": df["percent_mapped_reads"] < min_pct_map,
+        "low_mapq": df["mean_mapping_quality"] < min_mq,
+        "low_10X_breadth": df["proportion_genome_covered_over_10x"] < min_10X,
+        "low_50X_breadth": df["proportion_genome_covered_over_50x"] < min_50X,
+        "secondary": df["num_secondary_alignments"] > max_secondary,
+        "abnormal_amplicon_counts": (df["pos_str"] < min_pos_count) | (df["neg_str"] > 0),
     }
 
     #add instant fails here
     hard_fail_rules = {
-        "no_amplicons_detected": (df[amplicon_qc_median] < 300).all(axis=1),
-        "low_reads": df["num_mapped_reads"] < 100,
+        "no_amplicons_detected": (df[amplicon_qc_median] < min_med_count).all(axis=1),
+        "low_reads": df["num_mapped_reads"] < min_map,
     }
 
     #add flag name as col and bool for samples
@@ -128,7 +124,7 @@ def define_qc_rules(reads_qc_df, amplicon_qc_df):
     #collect key values/col names/flags as reason list to store in "flags" col per samp
     df["flags"] = df.apply(lambda rule: [col for col in flag_cols if rule[col]], axis=1)
     #final qc decision
-    df["qc_fail"] = (df["n_flags"] > 5) | df[hard_cols].any(axis=1)
+    df["qc_fail"] = (df["n_flags"] > max_qc_flags) | df[hard_cols].any(axis=1)
 
     exclusion_list = df[df["qc_fail"]]["sample_id"].tolist()
 
