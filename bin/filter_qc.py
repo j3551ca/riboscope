@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-#%%
+
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import seaborn as sns
-#%%
 
 def normalize_headers(df):
     df.columns = (df.columns.str.strip()
@@ -29,8 +28,7 @@ def ingest_seq_results(fastp_csv, bam_csv, samtools_stats_csv):
     .merge(samtools_qc, on="sample_id", how="outer")
 
     return(merge_df)
-#%%
-# import pandas as pd
+
 def syphilis_amplicons(amplicon_counts_csv):
     """
     Calculate median and min reads per group of queried sequences
@@ -54,8 +52,6 @@ def syphilis_amplicons(amplicon_counts_csv):
 
     return(amplicon_summary, df)  #amplicon_summary for merging with reads, df for heatmap
 
-#%%
-import argparse
 
 def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
                     min_pct_map, min_mq, min_10X, min_50X, max_secondary, min_pos_count, min_med_count, max_qc_flags):
@@ -128,7 +124,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_
     failed_amplicons["repeat"] = failed_amplicons["amplicon_name"].str.extract(r"(rpt\d+)")
 
     return(df, exclusion_list, failed_amplicons)
-#%%
+
 def summarize_repeats(failed_amplicons: pd.DataFrame) -> str:
     """
     Count unique repeats represented in each pool in each row (sample & pool group)
@@ -142,14 +138,13 @@ def summarize_repeats(failed_amplicons: pd.DataFrame) -> str:
     else:
         return ",".join(sorted(passing))  #"rpt1", "rpt2", "rpt..."
 
-#%%
 def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
     """
     Filter VCF based on QC logic pass/ fail samples 
     (exclude failed samples and/ or SNPs from failed regions).
     Annotates VCF with which repeats (copies) passed in each pool (gene). 
     The way primers are named in bed should contain information about gene and copy number
-    to match groups var used in amp_qc from syphilis_amplicons function.
+    to match groups var used in amplicon_qc df from syphilis_amplicons function.
     """
     variant_df =  normalize_headers(vcf_file)
     pass_variants = variant_df[~variant_df["sample_id"].isin(failed_samples)] 
@@ -180,88 +175,7 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
     
     return(annotated_vcf_pool_status)
 
-def plot_vcf(repeat_annotated_vcf):
 
-    """
-    Plot SNPs by pool and represent repeats present in pool with shape
-    """
-    repeat_annotated_vcf
-    max_count_pool1 = df_pool1["COUNT"].max()
-    max_count_pool2 = df_pool2["COUNT"].max()
-    filter_pool1 = df_pool1[(df_pool1["COUNT"]>=5)| (df_pool1["AF"]>=0.01)]
-    filter_pool2 = df_pool2[(df_pool2["COUNT"]>=5) | (df_pool2["AF"]>=0.01)]
-
-    filter_pool1 = filter_pool1.sort_values("POS", ascending=True)
-    filter_pool2 = filter_pool2.sort_values("POS", ascending=True)
-
-    plt.clf()
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2,
-                                figsize=(12, 8), sharey=True)
-
-    ax1.grid(axis='x', linestyle="--", alpha=0.3)
-    ax1.grid(axis='y', linestyle="--", alpha=0.3)
-    sc1 = ax1.scatter(filter_pool1["SNV"], filter_pool1["AF"],
-                s=filter_pool1["COUNT"],
-                alpha=0.5)
-    ax1.set_xticklabels(ax1.get_xticklabels(), va = "top",
-                        ha="right")
-    ax1.tick_params(axis="x", labelsize=6, 
-                    labelrotation=45)
-    ax1.set_xlabel("Pool 1")
-    ax1.set_yscale("log")
-
-    # now automatically pick 4 sizes from min→max and label them
-    handles1, labels1 = sc1.legend_elements(prop="sizes", num=5, fmt="{x:.0f}", color="#1f77b4", alpha =0.7)
-    ax1.legend(handles1, labels1, title="Samples", loc="upper left")
-
-
-    ax2.grid(axis='x', linestyle="--", alpha=0.3)
-    ax2.grid(axis='y', linestyle="--", alpha=0.3)
-    sc2 = ax2.scatter(filter_pool2["SNV"], filter_pool2["AF"],
-                s=filter_pool2["COUNT"],
-                alpha=0.5)
-    ax2.set_yticks(np.arange(0, 1.0, 0.1))
-    ax2.set_xticklabels(ax2.get_xticklabels(),va="top",
-                        ha="right")
-    ax2.tick_params(axis="x", labelsize=6, 
-                    labelrotation=45)
-    ax2.set_xlabel("\n\n\n\n\n\nPool 2")
-    ax2.set_yscale("log")
-
-    handles2, labels2 = sc2.legend_elements(prop="sizes", num=5, fmt="{x:.0f}", color="#1f77b4", alpha=0.7)
-    ax2.legend(handles2, labels2, title="Samples", loc="upper left")
-
-    fig.text(0.05, 0.5, "Allele Frequency", ha="center", fontsize=12, rotation=90)
-    fig.text(0.5, 0.04, "SNV", ha="center", fontsize=12)
-    fig.text(0.4, 0.95, "SNVs ≥1% Frequency or ≥5 Samples Called")
-    plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
-    plt.show()
-
-    return plt
-
-def plot_amplicons(raw_counts):
-
-    """
-    Heatmap of query sequence hits - proxy for presence/ absence of amplicons sequenced.
-    """
-
-    raw_counts.set_index("sample_id", inplace=True)
-
-    plt.clf()
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(raw_counts, annot=True, cmap="viridis", fmt=".0f",
-                cbar_kws={"label": "Sequence Count"},
-                annot_kws={"size": 6})  # Or use "coolwarm", "magma", etc.
-    plt.xticks(rotation=45,ha='right') 
-    plt.title("Presence of rRNA Repeat Sequences")
-    plt.xlabel("Sequence")
-    plt.ylabel("Samples")
-    plt.tight_layout()
-    
-    return plt
-
-
-#%%
 def main(args):
     read_aln_df = ingest_seq_results(args.fastp_qc, args.bam_qc, args.samtools_stats)
     amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts)
@@ -271,10 +185,9 @@ def main(args):
                                                                args.min_med_count, args.max_qc_flags)
     qc_df.to_csv(args.qc_output, index=False)
     reportable_vcf = filter_vcf(args.vcf_file, failed_samples, failed_amplicons, args.amplicon_bed)
-    plot_vcf(reportable_vcf)
-    plot_amplicons(amplicon_df)
-
-
+    reportable_vcf.to_csv("reportable_vcf.tsv", index=False, sep="\t")
+    amplicon_df.to_csv("amplicon_counts.csv", index=False)
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Digest QC results and format for pass/fail logic.")
