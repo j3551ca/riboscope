@@ -265,7 +265,10 @@ def plot_amplicons(raw_counts):
 def main(args):
     read_aln_df = ingest_seq_results(args.fastp_qc, args.bam_qc, args.samtools_stats)
     amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts)
-    qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc)
+    qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, args.min_q20, args.min_q30, args.min_bq, 
+                                                               args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
+                                                               args.min_mq, args.min_10x, args.min_50x, args.max_secondary, args.min_pos_count, 
+                                                               args.min_med_count, args.max_qc_flags)
     qc_df.to_csv(args.output, index=False)
     reportable_vcf = filter_vcf(args.vcf_file, failed_samples, failed_amplicons, args.amplicon_bed)
     plot_vcf(reportable_vcf)
@@ -283,5 +286,20 @@ if __name__ == '__main__':
     parser.add_argument("--amplicon_bed", type = str, required=True, help="Bed file of all amplicons produced by amplicon_coverage process")
     parser.add_argument("--min_med_amp_count", type=int, required=True, help="Minimum median query sequence counts to consider an amplicon as present")
     parser.add_argument("--output", type=str, required=False, help="Output file to write QC summary to")
+    parser.add_argument("--min_q20", type=str, required=True, help="Minimum threshold for Q20 rate")
+    parser.add_argument("--min_q30", type=str, required=True, help="Minimum threshold for Q30 rate")
+    parser.add_argument("--min_bq", type=str, required=True, help="Minimum average base quality threshold")
+    parser.add_argument("--min_depth", type=str, required=True, help="Minimum threshold for average depth")
+    parser.add_argument("--min_map_pair", type=str, required=True, help="Minimum threshold for number of reads that are mapped and paired")
+    parser.add_argument("--min_map", type=str, required=True, help="Minimum threshold for number of mapped reads")
+    parser.add_argument("--min_pct_map", type=str, required=True, help="Minimum threshold for percentage of mapped reads")
+    parser.add_argument("--min_mq", type=str, required=True, help="Minimum threshold for average mapping quality")
+    parser.add_argument("--min_10x", type=str, required=True, help="Minimum threshold for proportion of genome covered over 10X")
+    parser.add_argument("--min_50x", type=str, required=True, help="Minimum threshold for proportion of genome covered over 50X")
+    parser.add_argument("--max_secondary", type=str, required=True, help="Maximum allowable number of secondary alignments")
+    parser.add_argument("--min_pos_count", type=str, required=True, help="Minimum allowable number of positive control query sequence counts for testing presence of amplicons")
+    parser.add_argument("--min_med_count", type=str, required=True, help="Minimum allowable number of median query sequence counts for testing presence of amplicons")
+    parser.add_argument("--max_qc_flags", type=str, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
+
     args = parser.parse_args()
     main(args)
