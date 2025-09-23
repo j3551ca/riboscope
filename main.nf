@@ -19,7 +19,7 @@ recalibrate_bq;
 lofreq_indel;
 lofreq_call;
 filter_lofreq}                             from './modules/variant_identification.nf'
-include { collect_qc }                     from  './modules/sample_qc.nf'
+include { qc_filter }                     from  './modules/sample_qc.nf'
 //include { call_variants }                  from './modules/amplicon_consensus.nf'
 //include { make_consensus }                 from './modules/amplicon_consensus.nf'
 //include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
@@ -167,10 +167,8 @@ workflow {
 
     if (params.apply_qc) {
         amplicon_bed_file = amplicon_coverage.out.amplicon_bed
-        collect_qc(aggregate_fastp.combine(aggregate_bam.combine(aggregate_samtools.combine(aggregate_counts.combine(aggregate_snps.combine(amplicon_bed_file))))))
-        //apply_qc()
-        //report_results()
-
+        qc_filter(aggregate_fastp.combine(aggregate_bam.combine(aggregate_samtools.combine(aggregate_counts.combine(aggregate_snps.combine(amplicon_bed_file))))))
+        report_results(qc_filter.out.qc_results)
     }
 /**
     // Collect Provenance
