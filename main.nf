@@ -166,7 +166,8 @@ workflow {
     }
 
     if (params.apply_qc) {
-        collect_qc(aggregate_fastp.combine(aggregate_bam.combine(aggregate_counts.combine(aggregate_snps))))
+        amplicon_bed_file = amplicon_coverage.out.amplicon_bed
+        collect_qc(aggregate_fastp.combine(aggregate_bam.combine(aggregate_samtools.combine(aggregate_counts.combine(aggregate_snps.combine(amplicon_bed_file))))))
         //apply_qc()
         //report_results()
 
