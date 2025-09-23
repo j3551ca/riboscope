@@ -4,7 +4,8 @@ process collect_qc {
     publishDir "${params.outdir}", pattern: "*.csv", mode: 'copy'
 
     input:
-    tuple path(read_results), path(alignment_results), path(samtools_results), path(rrna_counts), path(vcf_results)
+    tuple path(read_results), path(alignment_results), path(samtools_results),
+     path(rrna_counts), path(vcf_results), path(amp_bed)
 
     output:
     path("*.csv")
@@ -17,7 +18,21 @@ process collect_qc {
     --samtools_stats ${samtools_results} \
     --amplicon_counts ${rrna_counts} \
     --vcf_qc ${vcf_results} \
-    --min_count ${params.min_amplicon_count}
+    --amplicon_bed ${amp_bed} \
+    --min_q20 ${params.min_q20_rate} \
+    --min_q30 ${params.min_q30_rate} \
+    --min_bq ${params.min_mean_bq} \
+    --min_depth ${params.min_mean_depth} \
+    --min_map_pair ${params.min_mapped_paired} \
+    --min_map ${params.min_mapped_reads} \
+    --min_pct_map ${params.min_percent_mapped} \
+    --min_mq ${params.min_mean_mq} \
+    --min10x ${params.min_10X_cov} \
+    --min_50x ${params.min_50X_cov} \
+    --max_secondary ${params.max_secondary} \
+    --min_pos_count ${params.min_pos_count} \
+    --min_med_count  ${params.min_amplicon_count} \
+    --max_qc_flags ${params.max_qc_flags}
     """
 }
 
