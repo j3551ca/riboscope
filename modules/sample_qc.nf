@@ -32,7 +32,8 @@ process collect_qc {
     --max_secondary ${params.max_secondary} \
     --min_pos_count ${params.min_pos_count} \
     --min_med_count  ${params.min_amplicon_count} \
-    --max_qc_flags ${params.max_qc_flags}
+    --max_qc_flags ${params.max_qc_flags} \
+    --qc_output ${params.qc_output}
     """
 }
 
