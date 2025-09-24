@@ -3,7 +3,6 @@
 import argparse
 import pandas as pd
 
-
 def normalize_headers(df):
     df.columns = (df.columns.str.strip()
                   .str.lower()

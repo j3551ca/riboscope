@@ -8,7 +8,7 @@ process qc_filter {
      path(rrna_counts), path(vcf_results), path(amp_bed)
 
     output:
-    tuple path("qc_summary.csv"), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), emit: qc_results
+    tuple path(params.qc_output), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), emit: qc_results
 
     script:
     """
