@@ -146,7 +146,9 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
     The way primers are named in bed should contain information about gene and copy number
     to match groups var used in amplicon_qc df from syphilis_amplicons function.
     """
-    variant_df =  normalize_headers(vcf_file)
+    vcf_df = pd.read_csv(vcf_file, header=0, sep ="\t")
+    amplicon_bed = pd.read_csv(amplicon_bed, header=0, sep ="\t")
+    variant_df =  normalize_headers(vcf_df)
     pass_variants = variant_df[~variant_df["sample_id"].isin(failed_samples)] 
     amplicon_bed["amp"] = amplicon_bed["name"].str.extract(r'(rpt\d+_pool\d+)')
     amplicon_bed["pool"] = amplicon_bed["name"].str.extract(r'(pool\d+)')
