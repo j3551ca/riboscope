@@ -184,7 +184,7 @@ def main(args):
     qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, args.min_q20, args.min_q30, args.min_bq, 
                                                                args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
                                                                args.min_mq, args.min_10x, args.min_50x, args.max_secondary, args.min_pos_count, 
-                                                               args.min_med_count, args.max_qc_flags)
+                                                               args.min_med_amp_count, args.max_qc_flags)
     qc_df.to_csv(args.qc_output, index=False)
     reportable_vcf = filter_vcf(args.vcf_file, failed_samples, failed_amplicons, args.amplicon_bed)
     reportable_vcf.to_csv("reportable_vcf.tsv", index=False, sep="\t")
