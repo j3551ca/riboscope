@@ -2,9 +2,7 @@
 
 import argparse
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import seaborn as sns
+
 
 def normalize_headers(df):
     df.columns = (df.columns.str.strip()
