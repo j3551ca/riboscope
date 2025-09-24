@@ -1,7 +1,7 @@
 process qc_filter {
 
     tag { "Applying sample QC" }
-    publishDir "${params.qc_output.getParent()}", pattern: "${params.qc_output.getSimpleName()}", mode: 'copy'
+    publishDir "${params.outdir}", pattern: "${params.qc_output}", mode: 'copy'
 
     input:
     tuple path(read_results), path(alignment_results), path(samtools_results),
@@ -17,7 +17,7 @@ process qc_filter {
     --bam_qc ${alignment_results} \
     --samtools_stats ${samtools_results} \
     --amplicon_counts ${rrna_counts} \
-    --vcf_qc ${vcf_results} \
+    --vcf_file ${vcf_results} \
     --amplicon_bed ${amp_bed} \
     --min_q20 ${params.min_q20_rate} \
     --min_q30 ${params.min_q30_rate} \
@@ -31,7 +31,7 @@ process qc_filter {
     --min_50x ${params.min_50X_cov} \
     --max_secondary ${params.max_secondary} \
     --min_pos_count ${params.min_pos_count} \
-    --min_med_count  ${params.min_amplicon_count} \
+    --min_med_amp_count  ${params.min_amplicon_count} \
     --max_qc_flags ${params.max_qc_flags} \
     --qc_output ${params.qc_output}
     """
@@ -50,17 +50,14 @@ process report_results {
 
     script:
     """
-    report_results.py \
-    --qc_summary ${qc_summary} \ 
-    --reportable_vcf ${annotated_vcf} \ 
-    --amplicon_counts ${amplicon_counts}
+    report_results.py --qc_summary ${qc_summary} --reportable_vcf ${annotated_vcf} --amplicon_counts ${amplicon_counts}
 
 
-    - high level summary: # passed samples, # failed, new mutations not seen before, presence/ absence mutations in known sites (23S)
-    - amplicons 1 - 4 present/ absent --> heatmap
-    - mutations color-coded by which amplicons are present in sample (ie. amplicon 1 only, 2 only, both/ ambiguous)
-    - reason failed samples failed
-    - done
+    #- high level summary: # passed samples, # failed, new mutations not seen before, presence/ absence mutations in known sites (23S)
+    #- amplicons 1 - 4 present/ absent --> heatmap
+    #- mutations color-coded by which amplicons are present in sample (ie. amplicon 1 only, 2 only, both/ ambiguous)
+    #- reason failed samples failed
+    #- done
     """
 
 
