@@ -6,3 +6,5 @@ dependencies:
   - python=3
   - seaborn=0.13.2
   - samtools=1.20
+  - plotly=6.3.0
+  - jinja2=3.1.6
