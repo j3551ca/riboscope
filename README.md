@@ -144,7 +144,7 @@ nextflow run BCCDC-PHL/riboscope \
 |`max_secondary` | Maximum allowable number of secondary alignments  | no    |  0    |
 |`min_pos_count` | Minimum allowable number of positive control query sequence counts for testing presence of amplicons  | no    |  100    |
 |`max_qc_flags` | Maximum number of soft fail QC flags allowable before sample is failed  | no    |  5    |
-|`qc_output` | Name of output file to write QC summary to  | no    |  'qc_summary'   |
+|`qc_output` | Name or prefix of output file to write QC summary to  | no    |  'qc_summary'   |
 |`html_template` | Activate QC filtering of samples and generation of html results report  | no    |  ./assets/report_template.html    |
 
 ## References
