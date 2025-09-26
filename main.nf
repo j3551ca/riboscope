@@ -19,7 +19,8 @@ recalibrate_bq;
 lofreq_indel;
 lofreq_call;
 filter_lofreq}                             from './modules/variant_identification.nf'
-include { qc_filter }                     from  './modules/sample_qc.nf'
+include { qc_filter }                      from  './modules/sample_qc.nf'
+include { report_results }                 from  './modules/sample_qc.nf'
 //include { call_variants }                  from './modules/amplicon_consensus.nf'
 //include { make_consensus }                 from './modules/amplicon_consensus.nf'
 //include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
