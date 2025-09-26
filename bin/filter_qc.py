@@ -101,7 +101,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_
 
     df["n_flags"] = df[flag_cols].sum(axis=1) #tally flags per sample - rowwise
     #collect key values/col names/flags as reason list to store in "flags" col per samp
-    df["flags"] = df.apply(lambda rule: [col for col in flag_cols if rule[col]], axis=1)
+    df["flags"] = df.apply(lambda samp: [col for col in flag_cols if samp[col]], axis=1)
     #final qc decision
     df["qc_fail"] = (df["n_flags"] > max_qc_flags) | df[hard_cols].any(axis=1)
 
