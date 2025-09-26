@@ -186,6 +186,7 @@ def main(args):
     reportable_vcf = filter_vcf(args.vcf_file, failed_samples, failed_amplicons, args.amplicon_bed)
     reportable_vcf.to_csv("reportable_vcf.tsv", index=False, sep="\t")
     amplicon_df.to_csv("amplicon_counts.csv", index=False)
+    failed_amplicons.to_csv("failed_amplicons.csv", index=False)
     
 
 if __name__ == '__main__':
