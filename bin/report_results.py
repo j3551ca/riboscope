@@ -58,13 +58,15 @@ def summarize_results(qc_summary, vcf_df):
 
 def plot_amplicons(failed_amps):
     """
-    Heatmap of (boolean) amplicon success for each sample.
+    Heatmap of (boolean) amplicon success or failure for each sample.
     """
     failed_amps_wide = failed_amps.pivot(index="sample_id", columns="amplicon_name", values="amplicon_fail")
 
     failed_order = failed_amps_wide.eq(1).sum(axis=1).sort_values(ascending=False)
     failed_amps_wide = failed_amps_wide.loc[failed_order.index]
     display = failed_amps_wide.replace({0: "Pass", 1: "Fail"})
+
+    n_samples =len(failed_amps["sample_id"].unique())
 
     fig = px.imshow(
         failed_amps_wide,
@@ -83,7 +85,8 @@ def plot_amplicons(failed_amps):
     fig.update_layout(title="Sequencing Success of Amplicons",
                         coloraxis_showscale=False,
                         autosize=True,
-                        height=300)
+                        height=n_samples*30)
+    
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
