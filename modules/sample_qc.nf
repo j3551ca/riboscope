@@ -8,7 +8,7 @@ process qc_filter {
      path(rrna_counts), path(vcf_results), path(amp_bed)
 
     output:
-    tuple path(params.qc_output), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), emit: qc_results
+    tuple path(params.qc_output), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), path("failed_amplicons.csv"), emit: qc_results
 
     script:
     """
@@ -40,24 +40,24 @@ process qc_filter {
 process report_results {
 
     tag { "Generating report" }
-    publishDir "${params.outdir}", pattern: "*_results.html", mode: "copy"
+    publishDir "${params.outdir}", pattern: "*_report.html", mode: "copy"
 
     input:
-    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts)
+    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons)
 
     output:
     path("*.html")
 
     script:
     """
-    report_results.py --qc_summary ${qc_summary} --reportable_vcf ${annotated_vcf} --amplicon_counts ${amplicon_counts}
-
+    report_results.py \
+    --qc_summary ${qc_summary} \
+    --reportable_vcf ${annotated_vcf} \
+    --amplicon_counts ${amplicon_counts} \
+    --failed_amplicons ${failed_amplicons} \
+    --html_template ${params.html_template}
 
     #- high level summary: # passed samples, # failed, new mutations not seen before, presence/ absence mutations in known sites (23S)
-    #- amplicons 1 - 4 present/ absent --> heatmap
-    #- mutations color-coded by which amplicons are present in sample (ie. amplicon 1 only, 2 only, both/ ambiguous)
-    #- reason failed samples failed
-    #- done
     """
 
 
