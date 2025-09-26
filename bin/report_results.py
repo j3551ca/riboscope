@@ -2,9 +2,10 @@
 
 import argparse
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import seaborn as sns
+import os
+from jinja2 import Environment, FileSystemLoader
+import plotly.express as px
+from datetime import datetime
 
 def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     """
@@ -122,20 +123,38 @@ def plot_heatmap(raw_counts):
     Heatmap of query sequence hits - proxy for presence/ absence of amplicons sequenced.
     """
 
-    raw_counts.set_index("sample_id", inplace=True)
+    raw_counts = raw_counts.set_index("sample_id")
+    raw_counts = raw_counts.sort_values("pos_str", ascending=False)
+    fig = px.imshow(
+        raw_counts,
+        aspect="auto",
+        text_auto=".0f",
+        color_continuous_scale="viridis",
+        labels=dict(x="Sequence", y="Sample", color="Count")
+    )
+    fig.update_layout(title="Presence of Query Sequences in rRNA Repeat Regions")
+    return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
-    plt.clf()
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(raw_counts, annot=True, cmap="viridis", fmt=".0f",
-                cbar_kws={"label": "Sequence Count"},
-                annot_kws={"size": 6})  # Or use "coolwarm", "magma", etc.
-    plt.xticks(rotation=45,ha='right') 
-    plt.title("Presence of rRNA Repeat Sequences")
-    plt.xlabel("Sequence")
-    plt.ylabel("Samples")
-    plt.tight_layout()
-    
-    return plt
+
+def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, html_template):
+    """
+    Take outputs of functions as input for html template file and render.
+    """
+    env = Environment(loader=FileSystemLoader(str(os.path.dirname(html_template))))
+    template = env.get_template(os.path.basename(html_template))
+
+    html_out = template.render(
+        title="Syphilis Results Report",
+        heading="SNVs Detected in Treponema pallidum Ribosomal Repeats",
+        summary_table=summary_data,
+        flags_table = qc_flags,
+        date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        amplicon_plot=amplicon_fig,
+        snp_plot=snp_fig,
+        heatmap_plot=count_heatmap)
+
+    with open("results_report.html", "w") as f:
+        f.write(html_out)
 
 
 def main(args):
