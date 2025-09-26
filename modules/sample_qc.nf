@@ -55,7 +55,10 @@ process report_results {
     --reportable_vcf ${annotated_vcf} \
     --amplicon_counts ${amplicon_counts} \
     --failed_amplicons ${failed_amplicons} \
-    --html_template ${params.html_template}
+    --html_template ${params.html_template} \
+    --ref ${params.ref} \
+    --n_qc_flag ${params.max_qc_flags} \
+    --min_med_amp_count ${params.min_amplicon_count}
 
     #- high level summary: # passed samples, # failed, new mutations not seen before, presence/ absence mutations in known sites (23S)
     """

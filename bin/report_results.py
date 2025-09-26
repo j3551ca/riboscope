@@ -30,7 +30,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df)
 
 
-def summarize_results(qc_summary, vcf_df):
+def summarize_results(qc_summary, vcf_df, ref):
     """
     Summarize sample pass/ fail and SNP results - results overview.
     """
@@ -40,13 +40,15 @@ def summarize_results(qc_summary, vcf_df):
     results_df = pd.DataFrame({"metric":["Total Number of Samples", 
                             "Number of Failed Samples", 
                             "SNPs ≥90% Frequency", 
-                            "SNPs ≥50% Samples"],
+                            "SNPs ≥50% Samples",
+                            "Reference Genome"],
                  "results": [len(qc_summary["sample_id"]), 
                              len(qc_summary[qc_summary["qc_fail"]]), 
                              ",<br>".join(vcf_df[vcf_df["af"]>=0.9][["snv", "pool"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
                              ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=0.5][["snv", "pool"]]
-                                        .drop_duplicates().astype(str).agg("_".join, axis=1))]})
+                                        .drop_duplicates().astype(str).agg("_".join, axis=1)),
+                                        os.path.abspath(ref)]})
     
     fail_flags = qc_summary[qc_summary["flags"]!="[]"][["sample_id", "flags"]]
     
@@ -67,6 +69,7 @@ def plot_amplicons(failed_amps):
     display = failed_amps_wide.replace({0: "Pass", 1: "Fail"})
 
     n_samples =len(failed_amps["sample_id"].unique())
+    n_amplicons = (len(failed_amps.columns.unique())-1)
 
     fig = px.imshow(
         failed_amps_wide,
@@ -85,7 +88,8 @@ def plot_amplicons(failed_amps):
     fig.update_layout(title="Sequencing Success of Amplicons",
                         coloraxis_showscale=False,
                         autosize=True,
-                        height=n_samples*30)
+                        height=n_samples*30,
+                        width=n_amplicons*200)
     
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
@@ -139,7 +143,7 @@ def plot_heatmap(raw_counts):
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
-def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, html_template):
+def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, html_template, n_flags, min_med_amp_count):
     """
     Take outputs of functions as input for html template file and render.
     """
@@ -151,6 +155,8 @@ def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, 
         heading="SNVs Detected in Treponema pallidum Ribosomal Repeats",
         summary_table=summary_data,
         flags_table = qc_flags,
+        n_flags=n_flags,
+        min_med_amp_count=min_med_amp_count,
         date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         amplicon_plot=amplicon_fig,
         snp_plot=snp_fig,
@@ -166,11 +172,12 @@ def main(args):
                                                                         args.amplicon_counts, 
                                                                         args.reportable_vcf, 
                                                                         args.failed_amplicons)
-    summary_df, qc_flags = summarize_results(qc_df, reportable_vcf)
+    summary_df, qc_flags = summarize_results(qc_df, reportable_vcf, args.ref)
     amp_fig = plot_amplicons(failed_amps)
     snv_fig = plot_vcf(reportable_vcf)
     count_fig = plot_heatmap(amplicon_df)
-    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, args.html_template)
+    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, 
+                  args.html_template, args.n_qc_flag, args.min_med_amp_count)
 
 
 if __name__ == '__main__':
@@ -180,6 +187,9 @@ if __name__ == '__main__':
     parser.add_argument("--reportable_vcf", type=str, required=True, help="VCF file annotated with repeat presence/absence")
     parser.add_argument("--failed_amplicons", type=str, required=True, help="Amplicon pass/fail status per sample")
     parser.add_argument("--html_template", type=str, required=True, help="html template file for results report")
+    parser.add_argument("--ref", type=str, required=True, help="Reference genome used during alignment and variant calling")
+    parser.add_argument("--n_qc_flag", type=str, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
+    parser.add_argument("--min_med_amp_count", type=str, required=True, help="Minimum median query sequence counts to consider an amplicon as present")
 
     args = parser.parse_args()
     main(args)
