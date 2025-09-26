@@ -172,6 +172,9 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
                                             on = ["sample_id", "pool"], 
                                             how = "left" )
     
+    #remove SNPs from pool (gene) that had 0 successful amplicons (repeats or "copies")
+    annotated_vcf_pool_status = annotated_vcf_pool_status[annotated_vcf_pool_status["repeat_status"]!="none"]
+
     return(annotated_vcf_pool_status)
 
 
