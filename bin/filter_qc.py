@@ -185,7 +185,7 @@ def main(args):
                                                                args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
                                                                args.min_mq, args.min_10x, args.min_50x, args.max_secondary, args.min_pos_count, 
                                                                args.min_med_amp_count, args.max_qc_flags)
-    qc_df.to_csv(args.qc_output, index=False)
+    qc_df.to_csv(f"{args.qc_output}.csv", index=False)
     reportable_vcf = filter_vcf(args.vcf_file, failed_samples, failed_amplicons, args.amplicon_bed)
     reportable_vcf.to_csv("reportable_vcf.tsv", index=False, sep="\t")
     amplicon_df.to_csv("amplicon_counts.csv", index=False)
