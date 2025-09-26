@@ -1,4 +1,4 @@
-# riboscope <img src="/pics/riboscope_logo.png" alt="logo" width="110" height="120">
+# riboscope <img src="/assets/riboscope_logo.png" alt="logo" width="110" height="120">
 
 This Nextflow pipeline monitors for mutations that may confer AMR in bacterial ribosomal repeats, specifically the 16S and 23S rRNA genes of *Treponema pallidum* subsp. *pallidum*, the etiological agent of syphilis. This workflow calls mutations in reference-guided assemblies of short paired-end reads sequenced from amplicon-based libraries. 
 
