@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .plot {
+            margin: 20px 0;
+        }
+        th {
+            text-align: left;
+        }
+        .pretty-table {
+            border-collapse: collapse;
+            width: 60%;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+        .pretty-table th, .pretty-table td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+        }
+        .pretty-table th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        .pretty-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ heading }}</h1>
+    <p>Generated on {{ date }}</p>
+
+    <h2><em>Treponema pallidum</em> Results Summary</h2>
+    <p>These results aim to monitor for novel mutations that may confer AMR in the ribosomal repeats, specifically the 16S and 23S rRNA genes of <em>Treponema pallidum</em> subsp. <em>pallidum</em>, the etiological agent of syphilis. 
+    Results are generated from calling mutations in reference-guided assemblies of short paired-end reads sequenced from amplicon-based libraries.
+    QC filtration has been applied to results.</p>
+
+    {{ summary_table | safe }}
+
+    <h2>Samples with QC Flags</h2>
+    <p>Any sample that was flagged during QC is displayed below. Samples with at least {{ n_flags }} flags failed QC or those that did not meet bare minimum criteria (ie. "hard fail rules" such as at least 1 successfully sequenced amplicon).</p>
+    
+    {{ flags_table | safe }}
+
+    <h2>Sequencing Success of Amplicons for Each Sample</h2>
+    <p>The success of failure of an amplicon (1 per gene & copy) was determined by whether the median count of short sequences located in the unique region of each amplicon were above or below a threshold value of {{ min_med_amp_count }}. These short sequences were detcted in the raw reads of samples as a proxy for presence or absence of each associated amplicon (see heatmap below).
+        Samples that did not have at least 1 amplicon successfully sequenced resulted in failing QC.
+    </p>
+    
+    <div class="plot">
+        {{ amplicon_plot | safe }}
+    </div>
+
+    <h2>SNVs Detected in rRNA of Treponema Pallidum</h2>
+    <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering oevr each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
+        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization.
+    </p>
+
+    <div class="plot">
+        {{ snp_plot | safe }}
+    </div>
+
+    <h2>Relative Query Sequence Counts</h2>
+    <p>Several pairs of short sequences (forward & reverse) unique to each amplicon were queried in the raw sequencing reads of each sample as a proxy for the presence or absence of each associated amplicon. During QC, the median of counts per amplicon was used to determine success.</p>
+
+    <div class="plot">
+        {{ heatmap_plot | safe }}
+    </div>
+</body>
+</html>

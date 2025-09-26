@@ -299,6 +299,7 @@ process amplicon_coverage {
 
     output:
     tuple val(sample_id), path("${sample_id}_amplicon_coverage.tsv"), emit: depths
+    path("amplicons.bed"), emit: amplicon_bed
 
     script:
     """

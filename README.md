@@ -12,7 +12,8 @@ nextflow run BCCDC-PHL/riboscope \
   --ref /path/to/ref.fa \
   --bed /path/to/primer_scheme.bed \
   --search_seqs /path/to/query/seq/multi.fasta \
-  --outdir /path/to/output_dir
+  --outdir /path/to/output_dir \
+  --apply_qc
 ```
 ## Table of Contents
   [Overview](#riboscope)<br>
@@ -87,6 +88,20 @@ flowchart TD
   ref --> align_consensus_to_ref
 ```
 
+To activate quality control (QC) filtering and generation of html report, run with the `--apply_qc` flag: 
+
+```
+nextflow run BCCDC-PHL/riboscope \
+  -profile conda \
+  --cache ~/.conda/envs \
+  --fastq_input /path/to/fastq_files \
+  --ref /path/to/ref.fa \
+  --bed /path/to/primer_scheme.bed \
+  --search_seqs /path/to/query/seq/multi.fasta \
+  --outdir /path/to/output_dir \
+  --apply_qc
+```
+
 
 
 ## Input
@@ -114,6 +129,23 @@ flowchart TD
 |`min_depth` | Minimum number of reads covering a genomic position. | no    |  10    |
 |`collect_outputs` | Summarize outputs of multiple samples into one. | no    |  off    |
 |`collected_outputs_prefix` | Prefix to name multi-sample summary files with. | no    |  'collected'    |
+|`apply_qc` | Activate QC filtering of samples and generation of html results report  | no    |  off    |
+|`min_amplicon_count` | Minimum median query sequence counts to consider an amplicon as present  | no    |  300    |
+|`min_q20_rate` | Minimum threshold for Q20 rate  | no    |  0.95    |
+|`min_q30_rate` | Minimum threshold for Q30 rate  | no    |  0.85    |
+|`min_mean_bq` | Minimum average base quality threshold  | no    |  30    |
+|`min_mean_depth` | Minimum threshold for average depth  | no    |  100    |
+|`min_mapped_paired` | Minimum threshold for number of reads that are mapped and paired | no    |  1000    |
+|`min_percent_mapped` | Minimum threshold for percentage of mapped reads | no    |  0.8    |
+|`min_mapped_reads` | Minimum threshold for number of mapped reads | no    |  100    |
+|`min_mean_mq` | Minimum threshold for average mapping quality | no    |  50    |
+|`min_10X_cov` | Minimum threshold for proportion of genome covered over 10X  | no    |  0.85    |
+|`min_50X_cov` | Minimum threshold for proportion of genome covered over 50X  | no    |  0.85    |
+|`max_secondary` | Maximum allowable number of secondary alignments  | no    |  0    |
+|`min_pos_count` | Minimum allowable number of positive control query sequence counts for testing presence of amplicons  | no    |  100    |
+|`max_qc_flags` | Maximum number of soft fail QC flags allowable before sample is failed  | no    |  5    |
+|`qc_output` | Name or prefix of output file to write QC summary to  | no    |  'qc_summary'   |
+|`html_template` | Activate QC filtering of samples and generation of html results report  | no    |  ./assets/report_template.html    |
 
 ## References
 
