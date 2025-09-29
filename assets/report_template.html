@@ -43,11 +43,6 @@
 
     {{ summary_table | safe }}
 
-    <h2>Samples with QC Flags</h2>
-    <p>Any sample that was flagged during QC is displayed below. Samples with at least {{ n_flags }} flags failed QC or those that did not meet bare minimum criteria (ie. "hard fail rules" such as at least 1 successfully sequenced amplicon).</p>
-    
-    {{ flags_table | safe }}
-
     <h2>Sequencing Success of Amplicons for Each Sample</h2>
     <p>The success of failure of an amplicon (1 per gene & copy) was determined by whether the median count of short sequences located in the unique region of each amplicon were above or below a threshold value of {{ min_med_amp_count }}. These short sequences were detcted in the raw reads of samples as a proxy for presence or absence of each associated amplicon (see heatmap below).
         Samples that did not have at least 1 amplicon successfully sequenced resulted in failing QC.
@@ -72,5 +67,11 @@
     <div class="plot">
         {{ heatmap_plot | safe }}
     </div>
+
+    <h2>Samples with QC Flags</h2>
+    <p>Any sample that was flagged during QC is displayed below. Samples with at least {{ n_flags }} flags failed QC or those that did not meet bare minimum criteria (ie. "hard fail rules" such as at least 1 successfully sequenced amplicon).</p>
+    
+    {{ flags_table | safe }}
+    
 </body>
 </html>
