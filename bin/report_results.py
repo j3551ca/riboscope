@@ -40,13 +40,13 @@ def summarize_results(qc_summary, vcf_df, ref):
     results_df = pd.DataFrame({"metric":["Total Number of Samples", 
                             "Number of Failed Samples", 
                             "SNPs ≥90% Frequency", 
-                            "SNPs ≥50% Samples",
+                            "SNPs ≥30% Samples",
                             "Reference Genome"],
                  "results": [len(qc_summary["sample_id"]), 
                              len(qc_summary[qc_summary["qc_fail"]]), 
                              ",<br>".join(vcf_df[vcf_df["af"]>=0.9][["snv", "pool"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
-                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=0.5][["snv", "pool"]]
+                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=0.3][["snv", "pool"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
                                         os.path.abspath(ref)]})
     
