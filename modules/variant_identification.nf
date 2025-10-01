@@ -169,11 +169,13 @@ process filter_lofreq {
     
     script:
     """
+    bcftools view -i "INFO/AF >= ${params.min_vaf}" ${lofreq_vcf} -o min_vaf.vcf
+
     bcftools query \
     -f '%CHROM\t%POS\t%REF\t%ALT\t%AF\t%DP4\n' \
-    ${lofreq_vcf} \
+    min_vaf.vcf \
     | awk 'BEGIN{OFS="\t"; print "CHROM", "POS", "REF", "ALT", "AF", "DP4", "SAMPLE_ID"} {print \$0, "${sample_id}"}' \
-    > ${sample_id}.lofreq.formatted.vcf
+    > ${sample_id}.lofreq.formatted.vcf 
 
     if [ \$(wc -l < "${sample_id}.lofreq.formatted.vcf") -eq 1 ]; then
         echo -e "0\t0\tN\tN\t0\t0\t${sample_id}" >> "${sample_id}.lofreq.formatted.vcf"
