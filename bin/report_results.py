@@ -130,9 +130,10 @@ def plot_heatmap(raw_counts):
     """
     Heatmap of query sequence hits - proxy for presence/ absence of amplicons sequenced.
     """
-
+    n_samples = len(raw_counts["sample_id"].unique())
     raw_counts = raw_counts.set_index("sample_id")
     raw_counts = raw_counts.sort_values("pos_str", ascending=False)
+    
     fig = px.imshow(
         raw_counts,
         aspect="auto",
@@ -140,7 +141,8 @@ def plot_heatmap(raw_counts):
         color_continuous_scale="viridis",
         labels=dict(x="Sequence", y="Sample", color="Count")
     )
-    fig.update_layout(title="Presence of Query Sequences in rRNA Repeat Regions")
+    fig.update_layout(title="Presence of Query Sequences in rRNA Repeat Regions",
+                      height=n_samples*13)
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
