@@ -104,13 +104,14 @@ def plot_vcf(vcf_df):
             color="repeat_status",  # optional categorical coloring
             opacity=0.6,
             size="count",
-            size_max=8,
+            size_max=12,
             hover_data={"snv":True, "af":False,"vaf":True, "sample_id":True, "count":False,"sample_count":True, "pool":False},  # info shown on hover
             facet_col="pool",
             log_y=True,
             title="rRNA SNVs Across Samples",
             template="plotly_white")
-
+    
+    fig.update_traces(marker=dict(sizemin=4))
     fig.update_xaxes(matches=None)
     fig.update_xaxes(title_text="", row=1, col=1)
     fig.update_xaxes(title_text="", row=1, col=2)
