@@ -322,7 +322,7 @@ process make_consensus {
     echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
 
     # add fake genotype col for iupac (0/0=ref, 0/1=mixed, 1/1=alt)
-    bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO/AF\n' sample_af.norm.vcf.gz | \
+    bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
     awk 'BEGIN{OFS="\t"}{
     gt = ($8 < 0.2) ? "0/0" : ($8 < 0.9 ? "0/1" : "1/1");
     print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt
@@ -330,25 +330,13 @@ process make_consensus {
 
     tabix -p vcf $out
 
-    (echo '##fileformat=VCFv4.2';
-    echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Pseudo genotype from AF">';
-    echo -e '#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE';
-    cat fake_GT.vcf) | bgzip > fake_GT.vcf.gz
-    tabix -p vcf fake_GT.vcf.gz
-
-    #bcftools annotate \
-    #-a fake_GT.vcf.gz \
-    #-c CHROM,POS,REF,ALT,FORMAT/GT \
-    #sample_af.norm.vcf.gz -Oz -o sample.withGT.vcf.gz
-    #tabix -p vcf sample.withGT.vcf.gz
-
     bcftools consensus \
     -s - \
     -f ${ref} \
     -m lowcov.mask.tsv \
     -I \
     --mark-del - \
-    fake_GT.vcf.gz > consensus_masked_iupac.fasta
+    ${out} > consensus_masked_iupac.fasta
 
     """
 }
