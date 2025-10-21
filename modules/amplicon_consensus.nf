@@ -334,14 +334,20 @@ process make_consensus {
     | grep -v "^#CHROM" && \
     echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Pseudo genotype from AF">' && \
     echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
+    ) > vcf_header.tmp
 
     bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
-    awk -v min_iupac=${params.min_iupac} -v max_iupac=${params.max_iupac} 'BEGIN{OFS="\t"}{
+    awk -v min_iupac=${min_iupac} -v max_iupac=${max_iupac} 'BEGIN{OFS="\t"}{
     af=0
     if (match($8,/AF=([0-9.eE+-]+)/,m)) af=m[1]
     gt = (af < min_iupac) ? "0/0" : (af < max_iupac ? "0/1" : "1/1");
-    print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt
-    }' ) | bgzip > constructed.vcf.gz
+    print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt,af
+    }' \
+    | sort -k1,1V -k2,2n -k11,11gr -s \
+    | cut -f1-10 \
+    > vcf_body.tmp
+
+    cat vcf_header.tmp vcf_body.tmp | bgzip > constructed.vcf.gz
 
     tabix -p vcf constructed.vcf.gz
 
