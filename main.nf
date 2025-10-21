@@ -21,9 +21,7 @@ lofreq_call;
 filter_lofreq}                             from './modules/variant_identification.nf'
 include { qc_filter }                      from  './modules/sample_qc.nf'
 include { report_results }                 from  './modules/sample_qc.nf'
-//include { call_variants }                  from './modules/amplicon_consensus.nf'
-//include { make_consensus }                 from './modules/amplicon_consensus.nf'
-//include { align_consensus_to_ref }         from './modules/amplicon_consensus.nf'
+include { make_consensus }                 from './modules/amplicon_consensus.nf'
 include { plot_coverage }                  from './modules/amplicon_consensus.nf'
 include { plot_amplicon_coverage }         from './modules/amplicon_consensus.nf'
 include { pipeline_provenance }            from './modules/provenance.nf'
@@ -122,11 +120,7 @@ workflow {
 
     filter_lofreq(lofreq_call.out.minor_alleles)
 
-    //call_variants(ch_primer_trimmed_alignment.join(ch_ref))
-
-    //make_consensus(ch_primer_trimmed_alignment)
-
-    //align_consensus_to_ref(make_consensus.out.consensus.join(ch_indexed_ref))
+    make_consensus(lofreq_call.out.minor_alleles.combine(ch_ref.combine(samtools_mpileup.out.depths)))
 
     // Collect multi-sample outputs
     if (params.collect_outputs | params.apply_qc) {
