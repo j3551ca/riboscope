@@ -353,8 +353,9 @@ process make_consensus {
     -I \
     --mark-del - \
     constructed.vcf.gz \
-    > ${sample_id}_consensus_masked_iupac.fasta
+    > consensus.fasta
 
+    awk -v h=">${sample_id}" 'NR==1{$0=h} {print}' consensus.fasta > ${sample_id}_consensus_masked_iupac.fasta
     """
 }
 
