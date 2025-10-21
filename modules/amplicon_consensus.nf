@@ -291,10 +291,13 @@ process make_consensus {
 
     tag { sample_id }
 
+    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_consensus_masked_iupac.fasta"
+
     input:
     tuple val(sample_id), path(lofreq_vcf), path(ref), path(depths)
 
     output:
+    tuple val(sample_id), path("${sample_id}_consensus_masked_iupac.fasta"), emit: consensus_seq
 
     script:
     """
@@ -312,8 +315,15 @@ process make_consensus {
     bgzip -@4 -c sample_af_filtered.vcf > sample_af_filtered.vcf.gz 
     tabix -p vcf sample_af_filtered.vcf.gz
 
-    #normalize (split multiallelic calls & left align indels)
-    bcftools norm -m -both -f ${ref} sample_af_filtered.vcf.gz -Oz -o sample_af.norm.vcf.gz
+    #normalize (split multiallelic calls - already done by lofreq - & left align indels)
+    bcftools norm \
+    -m \
+    -both \
+    -f ${ref} \
+    sample_af_filtered.vcf.gz \
+    -Oz \
+    -o sample_af.norm.vcf.gz
+
     tabix -p vcf sample_af.norm.vcf.gz
 
     # 1. take header from original vcf + new cols format and sample (for GT)
@@ -326,20 +336,24 @@ process make_consensus {
     echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
 
     bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
-    awk 'BEGIN{OFS="\t"}{
-    gt = ($8 < 0.05) ? "0/0" : ($8 < 0.5 ? "0/1" : "1/1");
+    awk -v min_iupac=${params.min_iupac} -v max_iupac=${params.max_iupac} 'BEGIN{OFS="\t"}{
+    af=0
+    if (match($8,/AF=([0-9.eE+-]+)/,m)) af=m[1]
+    gt = (af < min_iupac) ? "0/0" : (af < max_iupac ? "0/1" : "1/1");
     print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt
     }' ) | bgzip > constructed.vcf.gz
 
     tabix -p vcf constructed.vcf.gz
 
+    #default bcftools consensus -s - -I on sample_af.norm.vcf.gz == -I on constructed.vcf.gz with min_iupac=0 & max_iupac=0.5
+
     bcftools consensus \
-    -s - \
     -f ${ref} \
     -m lowcov.mask.tsv \
     -I \
     --mark-del - \
-    constructed.vcf.gz > consensus_masked_iupac.fasta
+    constructed.vcf.gz \
+    > ${sample_id}_consensus_masked_iupac.fasta
 
     """
 }
