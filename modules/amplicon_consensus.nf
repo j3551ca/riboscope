@@ -316,19 +316,22 @@ process make_consensus {
     bcftools norm -m -both -f ${ref} sample_af_filtered.vcf.gz -Oz -o sample_af.norm.vcf.gz
     tabix -p vcf sample_af.norm.vcf.gz
 
-    ( bcftools view -h "$in" \
+    # 1. take header from original vcf + new cols format and sample (for GT)
+    # 2. take body from original vcf & add pseudo genotype col for bcftools iupac (0/0=ref, 0/1=mixed, 1/1=alt)
+    # based on v4.2 vcf https://samtools.github.io/hts-specs/VCFv4.2.pdf
+
+    ( bcftools view -h "sample_af.norm.vcf.gz" \
     | grep -v "^#CHROM" && \
     echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Pseudo genotype from AF">' && \
     echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
 
-    # add fake genotype col for iupac (0/0=ref, 0/1=mixed, 1/1=alt)
     bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
     awk 'BEGIN{OFS="\t"}{
-    gt = ($8 < 0.2) ? "0/0" : ($8 < 0.9 ? "0/1" : "1/1");
+    gt = ($8 < 0.05) ? "0/0" : ($8 < 0.5 ? "0/1" : "1/1");
     print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt
-    }' ) | bgzip > $out
+    }' ) | bgzip > constructed.vcf.gz
 
-    tabix -p vcf $out
+    tabix -p vcf constructed.vcf.gz
 
     bcftools consensus \
     -s - \
@@ -336,7 +339,7 @@ process make_consensus {
     -m lowcov.mask.tsv \
     -I \
     --mark-del - \
-    ${out} > consensus_masked_iupac.fasta
+    constructed.vcf.gz > consensus_masked_iupac.fasta
 
     """
 }
