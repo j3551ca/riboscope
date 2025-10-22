@@ -120,7 +120,7 @@ workflow {
 
     filter_lofreq(lofreq_call.out.minor_alleles)
 
-    make_consensus(lofreq_call.out.minor_alleles.combine(ch_ref.combine(samtools_mpileup.out.depths)))
+    make_consensus(lofreq_call.out.minor_alleles.join(ch_ref.join(samtools_mpileup.out.depths.combine(ch_min_vaf))))
 
     // Collect multi-sample outputs
     if (params.collect_outputs | params.apply_qc) {
