@@ -82,7 +82,7 @@ process kraken2 {
 
     publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}*_kraken_report.txt", mode: 'copy'
     input:
-    tuple val(sample_id), path(reads), path(kraken2_db)
+    tuple val(sample_id), path(reads_1), path(reads_2), path(kraken2_db)
 
     output:
     tuple val(sample_id), path('*_kraken_report.txt')
@@ -95,7 +95,8 @@ process kraken2 {
       --output ${sample_id}_kraken_output.txt \
       --report ${sample_id}_kraken_report.txt \
       --paired \
-      ${reads}
+      ${reads_1} \
+      ${reads_2}
     """
 }
 
