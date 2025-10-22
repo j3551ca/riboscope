@@ -72,7 +72,6 @@ process detect_ribo_repeats {
     done
 
     IFS=','; echo "${sample_id},\${counts[*]}" >> ${sample_id}_rrna_counts.csv
-    
     """
 }
 
@@ -80,12 +79,12 @@ process kraken2 {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}*_kraken_report.txt", mode: 'copy'
+    publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}_kraken_*.txt", mode: 'copy'
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(kraken2_db)
 
     output:
-    tuple val(sample_id), path('*_kraken_report.txt')
+    tuple val(sample_id), path('*_kraken_report.txt'), emit: kraken2_report
     
     script:
     """
@@ -104,7 +103,7 @@ process bracken {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken_output_${analysis_stage}.txt", mode: 'copy'
+    publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken_*_${analysis_stage}.txt", mode: 'copy'
     errorStrategy 'ignore'
 
     input:
