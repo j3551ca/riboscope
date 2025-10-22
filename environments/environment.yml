@@ -1,4 +1,4 @@
-name: amplicon-consensus
+name: riboscope
 channels:
   - conda-forge
   - bioconda
@@ -7,10 +7,10 @@ dependencies:
   - fastp=0.23.2
   - filtlong=0.2.1
   - nanoq=0.10.0
-  - bwa=0.7.17
-  - minimap2=2.26
-  - samtools=1.18
-  - bcftools=1.18
+  - bwa=0.7.19
+  - minimap2=2.30
+  - samtools=1.22
+  - bcftools=1.22
   - bedtools=2.31.1
   - qualimap=2.3
   - ivar=1.3
@@ -19,4 +19,6 @@ dependencies:
   - gatk4=4.6.2.0
   - lofreq=2.1.5
   - seqkit=2.10.0
+  - kraken2=2.1.6
+  - bracken=3.1
 
