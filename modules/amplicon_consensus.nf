@@ -294,7 +294,7 @@ process make_consensus {
     publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_consensus_masked_iupac.fasta"
 
     input:
-    tuple val(sample_id), path(lofreq_vcf), path(ref), path(depths)
+    tuple val(sample_id), path(lofreq_vcf), path(ref), path(depths), val(min_vaf)
 
     output:
     tuple val(sample_id), path("${sample_id}_consensus_masked_iupac.fasta"), emit: consensus_seq
@@ -303,11 +303,11 @@ process make_consensus {
     """
     samtools faidx ${ref} 
 
-    awk 'NR>1 && $4 < ${params.min_depth} { print $1 "\t" $2 }' ${depths} > lowcov.mask.tsv
+    awk 'NR>1 && \$4 < ${params.min_depth} { print \$1 "\t" \$2 }' ${depths} > lowcov.mask.tsv
 
     # filter original lofreq vcf to match formatted tsv vcf - header/ format required for bcftools
     bcftools view \
-    -i "INFO/AF>=${params.min_vaf}" \
+    -i "INFO/AF>=${min_vaf}" \
     ${lofreq_vcf} \
     -o sample_af_filtered.vcf
     
@@ -337,11 +337,11 @@ process make_consensus {
     ) > vcf_header.tmp
 
     bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
-    awk -v min_iupac=${min_iupac} -v max_iupac=${max_iupac} 'BEGIN{OFS="\t"}{
+    awk -v min_iupac=${params.min_iupac} -v max_iupac=${params.max_iupac} 'BEGIN{OFS="\t"}{
     af=0
-    if (match($8,/AF=([0-9.eE+-]+)/,m)) af=m[1]
+    if (match(\$8,/AF=([0-9.eE+-]+)/,m)) af=m[1]
     gt = (af < min_iupac) ? "0/0" : (af < max_iupac ? "0/1" : "1/1");
-    print $1,$2,$3,$4,$5,$6,$7,$8,"GT",gt,af
+    print \$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,"GT",gt,af
     }' \
     | sort -k1,1V -k2,2n -k11,11gr -s \
     | cut -f1-10 \
@@ -361,7 +361,7 @@ process make_consensus {
     constructed.vcf.gz \
     > consensus.fasta
 
-    awk -v h=">${sample_id}" 'NR==1{$0=h} {print}' consensus.fasta > ${sample_id}_consensus_masked_iupac.fasta
+    awk -v h=">${sample_id}" 'NR==1{\$0=h} {print}' consensus.fasta > ${sample_id}_consensus_masked_iupac.fasta
     """
 }
 
