@@ -6,6 +6,10 @@ include { hash_files as hash_ref }         from './modules/hash_files.nf'
 include { hash_files as hash_fastq }       from './modules/hash_files.nf'
 include { fastp }                          from './modules/short_read_qc.nf'
 include { detect_ribo_repeats }            from './modules/short_read_qc.nf'
+include { kraken2 as kraken2_predehost }   from './modules/short_read_qc.nf'
+include { bracken as bracken_predehost }   from './modules/short_read_qc.nf'
+include { kraken2 as kraken2_postdehost}   from './modules/short_read_qc.nf'
+include { bracken as bracken_postdehost}   from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
 include { trim_primer_sequences }          from './modules/amplicon_consensus.nf'
@@ -13,6 +17,7 @@ include { qualimap_bamqc }                 from './modules/amplicon_consensus.nf
 include { samtools_stats }                 from './modules/amplicon_consensus.nf'
 include { samtools_mpileup }               from './modules/amplicon_consensus.nf'
 include { amplicon_coverage }              from './modules/amplicon_consensus.nf'
+include { extract_fastq_from_bam }         from './modules/amplicon_consensus.nf'
 include { ref_dict; 
 expected_snps; 
 recalibrate_bq; 
@@ -74,6 +79,24 @@ workflow {
     hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
     
     ch_indexed_ref = index_ref(ch_ref)
+    ch_min_vaf = Channel.of(params.min_vaf)
+    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
+    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
+    ch_read_length = Channel.of(params.read_length)
+    ch_taxonomy_level = Channel.of(params.taxonomy_level)
+    ch_predehost = Channel.of('pre_dehosting')
+    ch_postdehost = Channel.of('post_dehosting')
+    //ch_host_reference = Channel.of(params.host_reference)
+    //ch_host_name = Channel.of(params.host_name)
+    //ch_pathogen_name = Channel.of(params.pathogen_name)
+
+    kraken2_predehost(ch_fastq.combine(ch_kraken2_db))
+    
+    bracken_predehost(kraken2_predehost.out.kraken2_report
+    .combine(ch_bracken_db
+    .combine(ch_read_length
+    .combine(ch_taxonomy_level
+    .combine(ch_predehost)))))
 
     fastp(ch_fastq)
     detect_ribo_repeats(ch_fastq.combine(ch_search_seqs))
@@ -91,6 +114,16 @@ workflow {
     trim_primer_sequences(ch_alignment.combine(ch_bed))
 
     ch_primer_trimmed_alignment = trim_primer_sequences.out.primer_trimmed_alignment
+
+    extract_fastq_from_bam(ch_primer_trimmed_alignment)
+
+    kraken2_postdehost(extract_fastq_from_bam.out.dehosted_reads.combine(ch_kraken2_db))
+    
+    bracken_postdehost(kraken2_postdehost.out.kraken2_report
+    .combine(ch_bracken_db
+    .combine(ch_read_length
+    .combine(ch_taxonomy_level
+    .combine(ch_postdehost)))))
 
     qualimap_bamqc(ch_primer_trimmed_alignment)
 
