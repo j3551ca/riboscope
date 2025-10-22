@@ -246,6 +246,33 @@ process samtools_stats {
     """
 }
 
+process extract_fastq_from_bam {
+    tag { sample_id }
+
+    publishDir "${params.outdir}/dehosted_fastq", pattern: "${sample_id}_*.dehost.fastq.gz", mode: 'copy'
+    
+    input:
+    tuple val(sample_id), path(trimmed_mapped_bam)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_R1.dehost.fastq.gz"), path("${sample_id}_R2.dehost.fastq.gz"), emit: dehosted_reads
+
+    script:
+    """
+    samtools sort \
+    -n \
+    -o read_name_sorted.bam \
+    ${trimmed_mapped_bam[0]}
+    
+    samtools fastq \
+      -@ ${task.cpus} \
+      read_name_sorted.bam \
+      -1 ${sample_id}_R1.dehost.fastq.gz \
+      -2 ${sample_id}_R2.dehost.fastq.gz \
+      -s ${sample_id}_singletons.dehost.fastq.gz
+    """
+}
+
 
 process samtools_mpileup {
 
