@@ -78,6 +78,7 @@ process detect_ribo_repeats {
 process kraken2 {
 
     tag { sample_id }
+    label "kraken2_bracken"
 
     publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}_kraken*.txt", mode: 'copy'
     input:
@@ -105,6 +106,7 @@ process kraken2 {
 process bracken {
 
     tag { sample_id }
+    label "kraken2_bracken"
 
     publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken*${analysis_stage}.txt", mode: 'copy'
 
