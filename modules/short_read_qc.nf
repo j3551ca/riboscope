@@ -79,12 +79,12 @@ process kraken2 {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}_kraken_*.txt", mode: 'copy'
+    publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}_kraken*.txt", mode: 'copy'
     input:
-    tuple val(sample_id), path(reads_1), path(reads_2), path(kraken2_db)
+    tuple val(sample_id), path(reads_1), path(reads_2), path(kraken2_db), val(analysis_stage)
 
     output:
-    tuple val(sample_id), path('*_kraken_report.txt'), emit: kraken2_report
+    tuple val(sample_id), path("${sample_id}_kraken*.txt"), emit: kraken2_report
     
     script:
     """
@@ -95,6 +95,10 @@ process kraken2 {
       --paired \
       ${reads_1} \
       ${reads_2}
+
+    if [ "\$(wc -l < ${sample_id}_kraken_report_${analysis_stage}.txt)" -eq 0 ]; then
+        echo -e "0.0\t0\t0\tU\t0\tunclassified" >> ${sample_id}_kraken_report_${analysis_stage}.txt
+    fi
     """
 }
 
