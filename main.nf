@@ -117,7 +117,7 @@ workflow {
 
     extract_fastq_from_bam(ch_primer_trimmed_alignment)
 
-    kraken2_postdehost(extract_fastq_from_bam.out.dehosted_reads.combine(ch_kraken2_db))
+    kraken2_postdehost(extract_fastq_from_bam.out.dehosted_reads.combine(ch_kraken2_db.combine(ch_postdehost)))
     
     bracken_postdehost(kraken2_postdehost.out.kraken2_report
     .combine(ch_bracken_db
