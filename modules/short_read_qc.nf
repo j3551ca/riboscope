@@ -102,23 +102,30 @@ process bracken {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken_*_${analysis_stage}.txt", mode: 'copy'
-    errorStrategy 'ignore'
+    publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken*${analysis_stage}.txt", mode: 'copy'
 
     input:
     tuple val(sample_id), path(kraken_report), path(bracken_db), val(read_length), val(taxonomy_level), val(analysis_stage)
 
     output:
-    tuple val(sample_id), path("${sample_id}_bracken_output_${analysis_stage}.txt")
+    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.txt")
     
     script:
     """
-    bracken \
+    if ! bracken \
       -d ${bracken_db} \
       -i ${kraken_report} \
       -l ${taxonomy_level} \
       -o ${sample_id}_bracken_output_${analysis_stage}.txt \
       -w ${sample_id}_bracken_report_${analysis_stage}.txt \
-      -r ${read_length}
+      -r ${read_length} 2> bracken.err; then
+      if grep "Error: no reads found. Please check your Kraken report" bracken.err; then
+        echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  ${sample_id}_bracken_output_${analysis_stage}.txt
+        echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> ${sample_id}_bracken_output_${analysis_stage}.txt
+      else 
+        echo "Bracken failed for a reason unrelated to insufficient reads."
+        exit 1
+      fi
+    fi
     """
 }
