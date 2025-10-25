@@ -135,3 +135,26 @@ process bracken {
     fi
     """
 }
+
+process summarize_kraken2{
+
+    tag { sample_id }
+    publishDir "${params.outdir}/${sample_id}", pattern: "*.tsv", mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(kraken_report), val(analysis_stage)
+
+    output:
+    tuple val(sample_id), path("*.tsv")
+
+    script:
+    """
+    digest_kraken2_report.py \
+    --sample_id ${sample_id} \
+    --pathogen ${params.pathogen_name} \
+    --host ${params.host_name} \
+    --dehost_stage ${analysis_stage} \
+    --report ${kraken_report} \
+    --kraken2_output ${sample_id}_kraken2
+    """
+}

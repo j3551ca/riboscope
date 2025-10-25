@@ -10,6 +10,10 @@ include { kraken2 as kraken2_predehost }   from './modules/short_read_qc.nf'
 include { bracken as bracken_predehost }   from './modules/short_read_qc.nf'
 include { kraken2 as kraken2_postdehost}   from './modules/short_read_qc.nf'
 include { bracken as bracken_postdehost}   from './modules/short_read_qc.nf'
+include { summarize_kraken2 as 
+kraken2_summary_predehost}                 from './modules/short_read_qc.nf'
+include { summarize_kraken2 as 
+kraken2_summary_postdehost}                from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
 include { trim_primer_sequences }          from './modules/amplicon_consensus.nf'
@@ -91,6 +95,8 @@ workflow {
     //ch_pathogen_name = Channel.of(params.pathogen_name)
 
     kraken2_predehost(ch_fastq.combine(ch_kraken2_db.combine(ch_predehost)))
+
+    kraken2_summary_predehost(kraken2_predehost.out.kraken2_report.combine(ch_predehost))
     
     bracken_predehost(kraken2_predehost.out.kraken2_report
     .combine(ch_bracken_db
@@ -118,6 +124,8 @@ workflow {
     extract_fastq_from_bam(ch_primer_trimmed_alignment)
 
     kraken2_postdehost(extract_fastq_from_bam.out.dehosted_reads.combine(ch_kraken2_db.combine(ch_postdehost)))
+
+    kraken2_summary_postdehost(kraken2_postdehost.out.kraken2_report.combine(ch_postdehost))
     
     bracken_postdehost(kraken2_postdehost.out.kraken2_report
     .combine(ch_bracken_db
