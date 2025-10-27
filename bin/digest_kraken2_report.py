@@ -70,9 +70,9 @@ def main(args):
         "host_perc": host_perc,
         "unclassified_perc": unclassified_perc, 
         "other_perc": other_perc,
+        "analysis_stage": args.dehost_stage,
     }])
 
-    summary_df.columns = [col if col in ["sample_id", "pathogen", "host"] else f"{col}_{args.dehost_stage}" for col in summary_df.columns]
     summary_df.to_csv(f"{args.kraken2_output}.tsv", sep="\t", index=False)
 
 
