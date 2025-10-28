@@ -38,7 +38,10 @@ def detect_pathogen_percentage(df, pathogen, host):
     pathogen_percent = safe_return(df, pathogen, "percent_reads", float)
     host_percent = safe_return(df, host, "percent_reads", float)
     unclassified_percent = safe_return(df, "unclassified", "percent_reads", float)
-    other_percent = 100.0 - (pathogen_percent + host_percent + unclassified_percent)
+    if (pathogen_percent + host_percent + unclassified_percent) == 0:
+        other_percent = 0.0
+    else:
+        other_percent = 100.0 - (pathogen_percent + host_percent + unclassified_percent)
 
     return pathogen_percent, host_percent, round(other_percent, 2), unclassified_percent
 
