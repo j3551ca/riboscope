@@ -108,13 +108,13 @@ process bracken {
     tag { sample_id }
     label "kraken2_bracken"
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_bracken*${analysis_stage}.txt", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_bracken*${analysis_stage}.t*", mode: 'copy'
 
     input:
     tuple val(sample_id), path(kraken_report), path(bracken_db), val(read_length), val(taxonomy_level), val(analysis_stage)
 
     output:
-    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.txt")
+    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.t*")
     
     script:
     """
@@ -122,17 +122,21 @@ process bracken {
       -d ${bracken_db} \
       -i ${kraken_report} \
       -l ${taxonomy_level} \
-      -o ${sample_id}_bracken_output_${analysis_stage}.txt \
+      -o temp.tsv \
       -w ${sample_id}_bracken_report_${analysis_stage}.txt \
       -r ${read_length} 2> bracken.err; then
       if grep "Error: no reads found. Please check your Kraken report" bracken.err; then
-        echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  ${sample_id}_bracken_output_${analysis_stage}.txt
-        echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> ${sample_id}_bracken_output_${analysis_stage}.txt
+        echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  temp.tsv
+        echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> temp.tsv
       else 
         echo "Bracken failed for a reason unrelated to insufficient reads. Check bracken.err."
         exit 1
       fi
     fi
+
+    awk -v col1=${sample_id} -v col2=${analysis_stage} 'BEGIN{OFS="\t"} 
+    NR==1 {print "sample_id", "analysis_stage", \$0; next} 
+    {print col1, col2, \$0}' temp.tsv > ${sample_id}_bracken_output_${analysis_stage}.tsv
     """
 }
 
@@ -155,6 +159,6 @@ process summarize_kraken2{
     --host "${params.host_name}" \
     --dehost_stage ${analysis_stage} \
     --report ${kraken_report} \
-    --kraken2_output ${sample_id}_kraken2
+    --kraken2_output ${sample_id}_${analysis_stage}_kraken2
     """
 }
