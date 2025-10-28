@@ -80,7 +80,7 @@ process kraken2 {
     tag { sample_id }
     label "kraken2_bracken"
 
-    publishDir "${params.outdir}/kraken2_output", pattern: "${sample_id}_kraken*.txt", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_kraken*.txt", mode: 'copy'
     input:
     tuple val(sample_id), path(reads_1), path(reads_2), path(kraken2_db), val(analysis_stage)
 
@@ -108,7 +108,7 @@ process bracken {
     tag { sample_id }
     label "kraken2_bracken"
 
-    publishDir "${params.outdir}/bracken_output", pattern: "${sample_id}_bracken*${analysis_stage}.txt", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_bracken*${analysis_stage}.txt", mode: 'copy'
 
     input:
     tuple val(sample_id), path(kraken_report), path(bracken_db), val(read_length), val(taxonomy_level), val(analysis_stage)
