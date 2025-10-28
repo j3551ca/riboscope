@@ -27,14 +27,17 @@ def parse_kraken2(path):
 
     return(df)
 
+def safe_return(df, name, col, dtype):
+    return df[df["taxon_name"] == name.lower()][col].iloc[0] if name.lower() in df["taxon_name"].values else dtype(0)
 
 def detect_pathogen_percentage(df, pathogen, host):
     """
     Detect percentage of reads from host, pathogen, and other.
     """
-    pathogen_percent = df[df["taxon_name"] == pathogen.lower()]["percent_reads"].iloc[0]
-    host_percent = df[df["taxon_name"] == host.lower()]["percent_reads"].iloc[0]
-    unclassified_percent = df[df["taxon_name"] == "unclassified"]["percent_reads"].iloc[0]
+    
+    pathogen_percent = safe_return(df, pathogen, "percent_reads", float)
+    host_percent = safe_return(df, host, "percent_reads", float)
+    unclassified_percent = safe_return(df, "unclassified", "percent_reads", float)
     other_percent = 100.0 - (pathogen_percent + host_percent + unclassified_percent)
 
     return pathogen_percent, host_percent, round(other_percent, 2), unclassified_percent
@@ -44,10 +47,10 @@ def detect_pathogen_reads(df, pathogen, host):
     """
     Detect number of reads from host, pathogen, and other.
     """
-    pathogen_reads = df[df["taxon_name"] == pathogen.lower()]["clade_reads"].iloc[0]
-    host_reads = df[df["taxon_name"] == host.lower()]["clade_reads"].iloc[0]
-    unclassified_reads= df[df["taxon_name"] == "unclassified"]["clade_reads"].iloc[0]
-    classified_reads = df[df["taxon_name"] == "root"]["clade_reads"].iloc[0]
+    pathogen_reads = safe_return(df, pathogen, "clade_reads", int)
+    host_reads = safe_return(df, host, "clade_reads", int)
+    unclassified_reads= safe_return(df, "unclassified", "clade_reads", int)
+    classified_reads = safe_return(df, "root", "clade_reads", int)
     total_reads = classified_reads + unclassified_reads
     other_reads = total_reads - (pathogen_reads + host_reads + unclassified_reads)
 
