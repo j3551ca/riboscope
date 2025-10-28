@@ -114,7 +114,8 @@ process bracken {
     tuple val(sample_id), path(kraken_report), path(bracken_db), val(read_length), val(taxonomy_level), val(analysis_stage)
 
     output:
-    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.t*")
+    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.txt"), emit: bracken_report
+    tuple val(sample_id), path("${sample_id}_bracken*${analysis_stage}.tsv"), emit: bracken_tsv
     
     script:
     """
