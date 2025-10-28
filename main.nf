@@ -200,10 +200,23 @@ workflow {
 	    storeDir: "${params.outdir}"
 	)
 
-    aggregate_kraken2 = kraken2_summary_predehost.out.kraken2_summary.concat(kraken2_summary_postdehost.out.kraken2_summary).map{ it -> it[1] }.collectFile(
+    aggregate_kraken2 = kraken2_summary_predehost.out.kraken2_summary
+    .concat(kraken2_summary_postdehost.out.kraken2_summary)
+    .map{ it -> it[1] }
+    .toSortedList { a, b -> a.name <=> b.name }
+    .collectFile(
 	    keepHeader: true,
-	    sort: true,
 	    name: "${params.collected_outputs_prefix}_kraken2_summary.tsv",
+	    storeDir: "${params.outdir}"
+	)
+
+    aggregate_bracken = bracken_predehost.out.bracken_tsv
+    .concat(bracken_postdehost.out.bracken_tsv)
+    .map{ it -> it[1] }
+    .toSortedList { a, b -> a.name <=> b.name }
+    .collectFile(
+	    keepHeader: true,
+	    name: "${params.collected_outputs_prefix}_bracken.tsv",
 	    storeDir: "${params.outdir}"
 	)
     }
