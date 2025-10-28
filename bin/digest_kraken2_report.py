@@ -60,6 +60,7 @@ def main(args):
     pathogen_reads, host_reads, other_reads, unclassified_reads = detect_pathogen_reads(kraken_df, args.pathogen, args.host)
     summary_df = pd.DataFrame([{
         "sample_id": args.sample_id,
+        "analysis_stage": args.dehost_stage,
         "pathogen": args.pathogen.lower(),
         "host": args.host.lower(),
         "pathogen_reads": pathogen_reads,
@@ -70,7 +71,6 @@ def main(args):
         "host_perc": host_perc,
         "unclassified_perc": unclassified_perc, 
         "other_perc": other_perc,
-        "analysis_stage": args.dehost_stage,
     }])
 
     summary_df.to_csv(f"{args.kraken2_output}.tsv", sep="\t", index=False)
