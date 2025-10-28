@@ -145,7 +145,7 @@ process summarize_kraken2{
     tuple val(sample_id), path(kraken_report), val(analysis_stage)
 
     output:
-    tuple val(sample_id), path("*.tsv")
+    tuple val(sample_id), path("*.tsv"), emit: kraken2_summary
 
     script:
     """
