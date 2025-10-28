@@ -151,8 +151,8 @@ process summarize_kraken2{
     """
     digest_kraken2_report.py \
     --sample_id ${sample_id} \
-    --pathogen ${params.pathogen_name} \
-    --host ${params.host_name} \
+    --pathogen "${params.pathogen_name}" \
+    --host "${params.host_name}" \
     --dehost_stage ${analysis_stage} \
     --report ${kraken_report} \
     --kraken2_output ${sample_id}_kraken2
