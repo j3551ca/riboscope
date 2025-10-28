@@ -202,7 +202,7 @@ workflow {
 
     aggregate_kraken2 = kraken2_summary_predehost.out.kraken2_summary.concat(kraken2_summary_postdehost.out.kraken2_summary).map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
-	    sort: { it.text },
+	    sort: true,
 	    name: "${params.collected_outputs_prefix}_kraken2_summary.tsv",
 	    storeDir: "${params.outdir}"
 	)
