@@ -248,8 +248,6 @@ process samtools_stats {
 
 process extract_fastq_from_bam {
     tag { sample_id }
-
-    publishDir "${params.outdir}/dehosted_fastq", pattern: "${sample_id}_*.dehost.fastq.gz", mode: 'copy'
     
     input:
     tuple val(sample_id), path(trimmed_mapped_bam)
