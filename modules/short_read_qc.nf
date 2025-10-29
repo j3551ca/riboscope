@@ -123,21 +123,21 @@ process bracken {
       -d ${bracken_db} \
       -i ${kraken_report} \
       -l ${taxonomy_level} \
-      -o temp.tsv \
+      -o ${sample_id}_bracken_output_${analysis_stage}.tsv \
       -w ${sample_id}_bracken_report_${analysis_stage}.txt \
       -r ${read_length} 2> bracken.err; then
       if grep "Error: no reads found. Please check your Kraken report" bracken.err; then
-        echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  temp.tsv
-        echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> temp.tsv
+        echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  ${sample_id}_bracken_output_${analysis_stage}.tsv
+        echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> ${sample_id}_bracken_output_${analysis_stage}.tsv
       else 
         echo "Bracken failed for a reason unrelated to insufficient reads. Check bracken.err."
         exit 1
       fi
-    fi
-
+    fi 
+    
     awk -v col1=${sample_id} -v col2=${analysis_stage} 'BEGIN{OFS="\t"} 
     NR==1 {print "sample_id", "analysis_stage", \$0; next} 
-    {print col1, col2, \$0}' temp.tsv > ${sample_id}_bracken_output_${analysis_stage}.tsv
+    {print col1, col2, \$0}' ${sample_id}_bracken_output_${analysis_stage}.tsv > temp.tsv && mv temp.tsv ${sample_id}_bracken_output_${analysis_stage}.tsv
     """
 }
 
