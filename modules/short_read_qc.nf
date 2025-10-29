@@ -129,7 +129,6 @@ process bracken {
       if grep "Error: no reads found. Please check your Kraken report" bracken.err; then
         echo -e "name\ttaxonomy_id\ttaxonomy_lvl\tkraken_assigned_reads\tadded_reads\tnew_est_reads\tfraction_total_reads" >  ${sample_id}_bracken_output_${analysis_stage}.tsv
         echo -e "none\t0\t${taxonomy_level}\t0\t0\t0\t0.0" >> ${sample_id}_bracken_output_${analysis_stage}.tsv
-        exit 0
       else 
         echo "Bracken failed for a reason unrelated to insufficient reads. Check bracken.err."
         exit 1
