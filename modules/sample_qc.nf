@@ -1,7 +1,7 @@
 process qc_filter {
 
     tag { "Applying sample QC" }
-    publishDir "${params.outdir}", pattern: "${params.qc_output}", mode: 'copy'
+    publishDir "${params.outdir}", pattern: "${params.qc_output}.csv", mode: 'copy'
 
     input:
     tuple path(read_results), path(alignment_results), path(samtools_results),
