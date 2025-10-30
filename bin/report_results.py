@@ -89,7 +89,7 @@ def plot_amplicons(failed_amps):
     fig.update_layout(title="Sequencing Success of Amplicons",
                         coloraxis_showscale=False,
                         autosize=True,
-                        height=n_samples*30,
+                        height=450 if n_samples <=20 else n_samples*30,
                         width=n_amplicons*200)
     
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
@@ -143,7 +143,7 @@ def plot_heatmap(raw_counts):
         labels=dict(x="Sequence", y="Sample", color="Count")
     )
     fig.update_layout(title="Presence of Query Sequences in rRNA Repeat Regions",
-                      height=n_samples*13)
+                      height=600 if n_samples <=20 else n_samples*13)
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
@@ -212,7 +212,7 @@ def plot_taxonomy(kraken_results):
     fig.update_layout(
         title="Taxonomic Classification of Reads",
         title_x=0.5,
-        height=n_samples*13,
+        height= 600 if n_samples <=20 else n_samples*13,
         yaxis_title="Sample Name",
         annotations=[
             dict(
