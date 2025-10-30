@@ -147,7 +147,96 @@ def plot_heatmap(raw_counts):
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
-def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, html_template, n_flags, min_med_amp_count):
+def plot_taxonomy(kraken_results):
+    """
+    Stacked bar chart of taxonomic classification of reads to host, pathogen, unclassified, & other.
+    """
+    read_values = [ c for c in kraken_results.columns if "reads" in c]
+    perc_values = [c for c in kraken_results.columns if "perc" in c]
+
+    read_long = pd.melt(kraken_results, 
+                        id_vars = ["sample_id", "analysis_stage"], 
+                        value_vars=read_values, 
+                        var_name = "origin", value_name="reads")
+    perc_long = pd.melt(kraken_results, 
+                        id_vars = ["sample_id","analysis_stage"], 
+                        value_vars=perc_values, 
+                        var_name="origin", value_name="percentage")
+
+    read_long["origin"] = read_long["origin"].str.replace("_reads", "")
+    perc_long["origin"] = perc_long["origin"].str.replace("_perc", "")
+
+    df = read_long.merge(perc_long, 
+                            on = ["sample_id", "analysis_stage", "origin"])
+
+    # ensure pre comes before post-dehosting
+    df = df.sort_values("analysis_stage", ascending=False)
+
+    #y-axis order
+    sort_order_pre = df[(df["origin"]=="pathogen") & (df["analysis_stage"]=="pre_dehosting")]\
+        .sort_values("reads", ascending=False)["sample_id"].tolist()
+
+    stack_order = ["pathogen", "host", "unclassified", "other"]
+
+    n_samples = len(df["sample_id"].unique())
+
+    df["total_reads"] = df.groupby(["sample_id", "analysis_stage"])["reads"].transform("sum").astype(str)
+
+    df["analysis_stage"] = df["analysis_stage"].replace({"pre_dehosting": "Before Dehosting",
+                                                        "post_dehosting": "After Dehosting"})
+
+    fig = px.bar(df, 
+            x = "reads", 
+            y = "sample_id", 
+            facet_col="analysis_stage", 
+            color="origin", 
+            text="percentage", 
+            hover_data={"origin":True, "percentage": True, 
+                        "reads": ":.0f","total_reads": True, 
+                        "analysis_stage": True, "sample_id": True},
+            orientation="h",
+            category_orders={"sample_id": sort_order_pre,
+                            "origin": stack_order[::-1]},
+            color_discrete_map={
+            "pathogen": "#1b469d",
+            "host": "#F54927",
+            "unclassified": "#1b9d66",
+            "other": "#7f7f7f"
+        },
+            template="plotly_white", 
+            opacity = 0.9)
+
+    fig.update_xaxes(matches="x")
+    fig.update_xaxes(title_text="", row=1, col=1)
+    fig.update_xaxes(title_text="", row=1, col=2)
+    fig.update_layout(
+        title="Taxonomic Classification of Reads",
+        title_x=0.5,
+        height=n_samples*13,
+        yaxis_title="Sample Name",
+        annotations=[
+            dict(
+                text="Number of Reads",
+                x=0.5,
+                y=-0.1,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14)
+            )
+        ],
+        legend=dict(traceorder="reversed"),
+        margin=dict(b=50),
+        )
+    fig.update_traces(
+        texttemplate="%{text:.2f}%",   
+        textposition="inside",      
+    )
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1], font=dict(size=14)))
+
+    return fig.to_html(full_html=False, include_plotlyjs="cdn")
+
+def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, taxon_fig, html_template, n_flags, min_med_amp_count):
     """
     Take outputs of functions as input for html template file and render.
     """
