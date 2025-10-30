@@ -253,6 +253,7 @@ def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, 
         date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         amplicon_plot=amplicon_fig,
         snp_plot=snp_fig,
+        taxon_plot = taxon_fig,
         heatmap_plot=count_heatmap)
 
     with open("results_report.html", "w") as f:
@@ -261,15 +262,17 @@ def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, 
 
 def main(args):
 
-    qc_df, amplicon_df, reportable_vcf, failed_amps = ingest_qc_results(args.qc_summary, 
+    qc_df, amplicon_df, reportable_vcf, failed_amps, kraken_df = ingest_qc_results(args.qc_summary, 
                                                                         args.amplicon_counts, 
                                                                         args.reportable_vcf, 
-                                                                        args.failed_amplicons)
+                                                                        args.failed_amplicons,
+                                                                        args.kraken2_tsv)
     summary_df, qc_flags = summarize_results(qc_df, reportable_vcf, args.ref)
     amp_fig = plot_amplicons(failed_amps)
     snv_fig = plot_vcf(reportable_vcf)
     count_fig = plot_heatmap(amplicon_df)
-    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, 
+    taxon_fig = plot_taxonomy(kraken_df)
+    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, taxon_fig,
                   args.html_template, args.n_qc_flag, args.min_med_amp_count)
 
 
@@ -279,6 +282,7 @@ if __name__ == '__main__':
     parser.add_argument("--amplicon_counts", type=str, required=True, help="Amplicon query sequence count table")
     parser.add_argument("--reportable_vcf", type=str, required=True, help="VCF file annotated with repeat presence/absence")
     parser.add_argument("--failed_amplicons", type=str, required=True, help="Amplicon pass/fail status per sample")
+    parser.add_argument("--kraken2_tsv", type=str, required=True, help="Kraken2 results summary tsv file")
     parser.add_argument("--html_template", type=str, required=True, help="html template file for results report")
     parser.add_argument("--ref", type=str, required=True, help="Reference genome used during alignment and variant calling")
     parser.add_argument("--n_qc_flag", type=str, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
