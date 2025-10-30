@@ -61,6 +61,15 @@
         {{ snp_plot | safe }}
     </div>
 
+    <h2>Taxonomic Classification of Reads in Each Sample</h2>
+    <p>The taxonomic classification of reads by Kraken2 in each sample before and after dehosting. Dehosting is performed by discarding reads that did not map to the reference sequence of the target pathogen. reads are categorized as pathogen, host, unclassified, and other for remaining reads. 
+        The figure shows what percentage of each sample the number of reads is associated with.  
+    </p>
+    
+    <div class="plot">
+        {{ taxon_plot | safe }}
+    </div>
+
     <h2>Relative Query Sequence Counts</h2>
     <p>Several pairs of short sequences (forward & reverse) unique to each amplicon were queried in the raw sequencing reads of each sample as a proxy for the presence or absence of each associated amplicon. During QC, the median of counts per amplicon was used to determine success.</p>
 
