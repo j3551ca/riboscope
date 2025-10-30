@@ -46,7 +46,7 @@ process report_results {
     publishDir "${params.outdir}", pattern: "*_report.html", mode: "copy"
 
     input:
-    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons)
+    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons), path(kraken2_tsv)
 
     output:
     path("*.html")
@@ -56,6 +56,7 @@ process report_results {
     report_results.py \
     --qc_summary ${qc_summary} \
     --reportable_vcf ${annotated_vcf} \
+    --kraken2_tsv ${kraken2_tsv} \
     --amplicon_counts ${amplicon_counts} \
     --failed_amplicons ${failed_amplicons} \
     --html_template ${params.html_template} \

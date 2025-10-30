@@ -230,7 +230,8 @@ workflow {
         .combine(aggregate_snps
         .combine(amplicon_bed_file
         .combine(aggregate_kraken2)))))))
-        report_results(qc_filter.out.qc_results)
+        report_results(qc_filter.out.qc_results
+        .combine(aggregate_kraken2))
     }
 /**
     // Collect Provenance
