@@ -184,7 +184,7 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
 def main(args):
     read_aln_df = ingest_seq_results(args.fastp_qc, args.bam_qc, args.samtools_stats)
     amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts)
-    kraken_df = pd.read.csv(args.kraken2_tsv, sep = "\t", header=0)
+    kraken_df = pd.read_csv(args.kraken2_tsv, sep = "\t", header=0)
     qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, kraken_df, args.min_q20, args.min_q30, args.min_bq, 
                                                                args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
                                                                args.min_mq, args.min_10x, args.min_50x, args.max_secondary, args.min_pos_count, 
