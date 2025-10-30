@@ -5,7 +5,7 @@ process qc_filter {
 
     input:
     tuple path(read_results), path(alignment_results), path(samtools_results),
-     path(rrna_counts), path(vcf_results), path(amp_bed)
+     path(rrna_counts), path(vcf_results), path(amp_bed), path(kraken_results)
 
     output:
     tuple path("${params.qc_output}.csv"), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), path("failed_amplicons.csv"), emit: qc_results
@@ -16,6 +16,7 @@ process qc_filter {
     --fastp_qc ${read_results} \
     --bam_qc ${alignment_results} \
     --samtools_stats ${samtools_results} \
+    --kraken2_tsv ${kraken_results} \
     --amplicon_counts ${rrna_counts} \
     --vcf_file ${vcf_results} \
     --amplicon_bed ${amp_bed} \
