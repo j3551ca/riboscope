@@ -206,6 +206,8 @@ if __name__ == '__main__':
     parser.add_argument("--vcf_file", type=str, required=True, help="Aggregated LoFreq SNPs")
     parser.add_argument("--amplicon_bed", type = str, required=True, help="Bed file of all amplicons produced by amplicon_coverage process")
     parser.add_argument("--qc_output", type=str, required=False, help="Name of output file to write QC summary to")
+    parser.add_argument("--min_pathogen", type=float, required=True, help="Minimum acceptable proportion of target pathogen in sample after dehosting, exclusive")
+    parser.add_argument("--max_host", type=float, required=True, help="Maximum acceptable proportion of host in sample after dehosting, exclusive")
     parser.add_argument("--min_q20", type=float, required=True, help="Minimum threshold for Q20 rate")
     parser.add_argument("--min_q30", type=float, required=True, help="Minimum threshold for Q30 rate")
     parser.add_argument("--min_bq", type=int, required=True, help="Minimum average base quality threshold")
