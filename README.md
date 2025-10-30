@@ -139,6 +139,8 @@ Kraken2 and Bracken provide taxonomic classification and abundance estimation on
 |`min_vaf` | Minimum allowable variant allele frequency (VAF) to filter. This porportion is applied to lofreq VCF and resulting \*lofreq.formatted.vcf contains only SNPs present above this VAF. | no    |  0    |
 |`apply_qc` | Activate QC filtering of samples and generation of html results report  | no    |  off    |
 |`min_amplicon_count` | Minimum median query sequence counts to consider an amplicon as present  | no    |  300    |
+|`min_pathogen` | Minimum percentage of reads classified as target pathogen in a sample | no    |  85.0    |
+|`max_host` | Maximum percentage of host reads in a sample | no    |  5.0   |
 |`min_q20_rate` | Minimum threshold for Q20 rate  | no    |  0.95    |
 |`min_q30_rate` | Minimum threshold for Q30 rate  | no    |  0.85    |
 |`min_mean_bq` | Minimum average base quality threshold  | no    |  30    |
