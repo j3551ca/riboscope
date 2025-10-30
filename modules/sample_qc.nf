@@ -20,6 +20,8 @@ process qc_filter {
     --amplicon_counts ${rrna_counts} \
     --vcf_file ${vcf_results} \
     --amplicon_bed ${amp_bed} \
+    --min_pathogen ${params.min_pathogen} \
+    --max_host ${params.max_host} \
     --min_q20 ${params.min_q20_rate} \
     --min_q30 ${params.min_q30_rate} \
     --min_bq ${params.min_mean_bq} \
