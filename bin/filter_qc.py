@@ -52,7 +52,9 @@ def syphilis_amplicons(amplicon_counts_csv):
 def sample_qc_filter(reads_qc_df, amplicon_qc_df, kraken2_df, max_host, min_pathogen, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
                     min_pct_map, min_mq, min_10X, min_50X, max_secondary, min_pos_count, min_med_count, max_qc_flags):
 
-    df = reads_qc_df.merge(amplicon_qc_df, on="sample_id", how="left")
+    df = reads_qc_df \
+        .merge(amplicon_qc_df, on="sample_id", how="left") \
+        .merge(kraken2_df[kraken2_df["analysis_stage"]=="post_dehosting"], on = "sample_id", how="left")
 
     #define vars
     gc_low =  df["gc_content_after_filtering"].mean(axis=0) - df["gc_content_after_filtering"].std() 
@@ -66,6 +68,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, kraken2_df, max_host, min_path
         "abnormal_gc": (df["gc_content_after_filtering"] < gc_low) | (df["gc_content_after_filtering"] > gc_high),
         "insufficient_cycles": ((df["read1_mean_length_after_filtering"] <= read_length_low) | (df["read2_mean_length_after_filtering"] <= read_length_low)),
         "excessive_cycles": ((df["average_length"]!=0) & ((df["read1_mean_length_after_filtering"] >= read_length_high) | (df["read2_mean_length_after_filtering"] >= read_length_high))),
+        "excessive_host_content": df["host_perc"] > max_host,
         "low_q20": df["q20_rate_after_filtering"] < min_q20,
         "low_q30": df["q30_rate_after_filtering"] < min_q30,
         "low_bq": df["average_quality"] < min_bq,
@@ -83,6 +86,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, kraken2_df, max_host, min_path
     hard_fail_rules = {
         "no_amplicons_detected": (df[amplicon_qc_median] < min_med_count).all(axis=1),
         "low_reads": df["num_mapped_reads"] < min_map,
+        "insufficient_pathogen_content": df["pathogen_perc"] < min_pathogen,
     }
 
     #add flag name as col and bool for samples
