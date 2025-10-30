@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 import plotly.express as px
 from datetime import datetime
 
-def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
+def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons, kraken2_tsv):
     """
     Read in QC results as pandas.DataFrames for use in html report generation.
     """
@@ -15,6 +15,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     reportable_vcf = pd.read_csv(annotated_vcf, header=0, sep="\t")
     amplicon_df = pd.read_csv(amp_df, header=0)
     failed_amplicon_df = pd.read_csv(failed_amplicons, header=0)
+    kraken_df = pd.read_csv(kraken2_tsv, header = 0, sep ="\t")
 
     #prep vcf table for viz & summarizing 
     reportable_vcf["snv"] = reportable_vcf["ref"].astype(str) + reportable_vcf["pos"].astype(str) + reportable_vcf["alt"]
@@ -27,7 +28,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     reportable_vcf["sample_count"] = reportable_vcf["count"].astype(str) + "/" + reportable_vcf["total_pool_count"].astype(str)
     reportable_vcf["vaf"] = (reportable_vcf["af"]*100).round(1).astype(str) + "%"
 
-    return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df)
+    return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df, kraken_df)
 
 
 def summarize_results(qc_summary, vcf_df, ref):
