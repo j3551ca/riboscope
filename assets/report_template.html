@@ -30,20 +30,128 @@
         .pretty-table tr:nth-child(even) {
             background-color: #fafafa;
         }
+
+        .toc-wrapper {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+          pointer-events: none;       
+        }
+
+        .toc-container {
+          pointer-events: auto;       
+          font-size: 13px;
+          text-align: right; 
+        }
+
+        .toc-toggle {
+          background: #1b3d6d;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          padding: 9px 14px;
+          cursor: pointer;
+          font-size: 1.0em;
+          transition: background 0.2s;
+        }
+        .toc-toggle:hover { 
+            background: #254b80; 
+            transform: translateY(-1px);}
+
+        .toc {
+          background: #e8effa;
+          border: 1px solid #c5d2e8;
+          border-radius: 6px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+          width: 200px;
+          padding: 8px 12px;
+          opacity: 0;
+          transform: translateY(-5px);
+          transition: all 0.25s ease;
+        }
+
+        .toc-container:hover .toc {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .toc h3 {
+          margin: 0 0 6px 0;
+          font-size: 0.9em;
+          text-align: center;
+          color: #1b3d6d;
+        }
+
+        .toc ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        .toc li { margin-bottom: 5px; }
+
+        .toc a {
+          display: block;
+          background: #d7e3f4;
+          border-radius: 4px;
+          padding: 6px 8px;
+          color: #1b3d6d;
+          text-decoration: none;
+          transition: background 0.2s, color 0.2s;
+        }
+        .toc a:hover { background: #c1d4f0; }
+        .toc a.active {
+          background: #1b3d6d;
+          color: white;
+          font-weight: bold;
+        }
+
+        @media (max-width:700px){
+          .toc-wrapper { display:none; }
+        }
+        p, h1, h2, h3, h4, h5, h6, ul, ol {
+        max-width: 1000px;
+        line-height: 1.6;
+        text-align: left;
+        margin-bottom: 1.5em;   /* space between sections */
+        }
+
+        /* plots and tables full width with spacing */
+        .plot, .pretty-table {
+        max-width: none !important;
+        margin: 1.5em 0;
+        }
+        
     </style>
 </head>
 <body>
+    <div class="toc-wrapper">
+      <div class="toc-container">
+        <button class="toc-toggle">☰ Contents</button>
+        <div class="toc">
+          <h3>Table of Contents</h3>
+          <ul>
+            <li><a href="#summary_table">Results Summary</a></li>
+            <li><a href="#amplicon_status">Sequencing Success of Amplicons</a></li>
+            <li><a href="#snvs">SNVs Detected in rRNA</a></li>
+            <li><a href="#kraken2_bar">Taxonomic Composition</a></li>
+            <li><a href="#amplicon_counts">Amplicon Detection Heatmap</a></li>
+            <li><a href="#qc_flags">QC Flags</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
     <h1>{{ heading }}</h1>
     <p>Generated on {{ date }}</p>
 
-    <h2><em>Treponema pallidum</em> Results Summary</h2>
+    <h2 id="summary_table"><em>Treponema pallidum</em> Results Summary</h2>
     <p>These results aim to monitor for novel mutations that may confer AMR in the ribosomal repeats, specifically the 16S and 23S rRNA genes of <em>Treponema pallidum</em> subsp. <em>pallidum</em>, the etiological agent of syphilis. 
     Results are generated from calling mutations in reference-guided assemblies of short paired-end reads sequenced from amplicon-based libraries.
     QC filtration has been applied to results.</p>
 
     {{ summary_table | safe }}
 
-    <h2>Sequencing Success of Amplicons for Each Sample</h2>
+    <h2 id="amplicon_status">Sequencing Success of Amplicons for Each Sample</h2>
     <p>The success of failure of an amplicon (1 per gene & copy) was determined by whether the median count of short sequences located in the unique region of each amplicon were above or below a threshold value of {{ min_med_amp_count }}. These short sequences were detcted in the raw reads of samples as a proxy for presence or absence of each associated amplicon (see heatmap below).
         Samples that did not have at least 1 amplicon successfully sequenced resulted in failing QC.
     </p>
@@ -52,7 +160,7 @@
         {{ amplicon_plot | safe }}
     </div>
 
-    <h2>SNVs Detected in rRNA of Treponema Pallidum</h2>
+    <h2 id="snvs">SNVs Detected in rRNA of Treponema Pallidum</h2>
     <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering oevr each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
         Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization.
     </p>
@@ -61,17 +169,59 @@
         {{ snp_plot | safe }}
     </div>
 
-    <h2>Relative Query Sequence Counts</h2>
+    <h2 id="kraken2_bar">Taxonomic Classification of Reads in Each Sample</h2>
+    <p>The taxonomic classification of reads by Kraken2 in each sample before and after dehosting. Dehosting is performed by discarding reads that did not map to the reference sequence of the target pathogen. Reads are categorized as pathogen, host, unclassified, and other for remaining reads. 
+        The figure shows what percentage of each sample the number of reads is associated with.  
+    </p>
+    
+    <div class="plot">
+        {{ taxon_plot | safe }}
+    </div>
+
+    <h2 id="amplicon_counts">Relative Query Sequence Counts</h2>
     <p>Several pairs of short sequences (forward & reverse) unique to each amplicon were queried in the raw sequencing reads of each sample as a proxy for the presence or absence of each associated amplicon. During QC, the median of counts per amplicon was used to determine success.</p>
 
     <div class="plot">
         {{ heatmap_plot | safe }}
     </div>
 
-    <h2>Samples with QC Flags</h2>
+    <h2 id="qc_flags">Samples with QC Flags</h2>
     <p>Any sample that was flagged during QC is displayed below. Samples with at least {{ n_flags }} flags failed QC or those that did not meet bare minimum criteria (ie. "hard fail rules" such as at least 1 successfully sequenced amplicon).</p>
     
     {{ flags_table | safe }}
-    
+    <script>
+        // smooth scroll + instant highlight
+        document.querySelectorAll('.toc a').forEach(link => {
+          link.addEventListener('click', e => {
+            e.preventDefault();
+            const target = document.querySelector(link.getAttribute('href'));
+            if (!target) return;
+        
+            // smooth scroll to the section
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+            // update the URL hash (so browser focus jumps correctly)
+            history.replaceState(null, '', link.getAttribute('href'));
+        
+            // highlight instantly
+            document.querySelectorAll('.toc a').forEach(a => a.classList.remove('active'));
+            link.classList.add('active');
+          });
+        });
+        
+        // auto-highlight while scrolling
+        const sections = document.querySelectorAll('[id]');
+        const navLinks = document.querySelectorAll('.toc a');
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              navLinks.forEach(a => a.classList.remove('active'));
+              const active = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
+              if (active) active.classList.add('active');
+            }
+          });
+        },{ threshold: 0.3 });
+        sections.forEach(sec => observer.observe(sec));
+        </script>
 </body>
 </html>

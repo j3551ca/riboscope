@@ -13,7 +13,7 @@ def normalize_headers(df):
 def ingest_seq_results(fastp_csv, bam_csv, samtools_stats_csv):
     """
     Read in aggregated QC reports and combine alignment & read QC 
-    for downstream QC logic. Keep amplicon counts and VCF separate for 
+    for downstream QC logic. Keep amplicon counts, kraken2, and VCF separate for 
     independent processing.
     """
     read_qc = pd.read_csv(fastp_csv, header=0)
@@ -49,11 +49,12 @@ def syphilis_amplicons(amplicon_counts_csv):
 
     return(amplicon_summary, df)  #amplicon_summary for merging with reads, df for heatmap
 
-
-def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
+def sample_qc_filter(reads_qc_df, amplicon_qc_df, kraken2_df, max_host, min_pathogen, min_q20, min_q30, min_bq, min_depth, min_map_pair, min_map,
                     min_pct_map, min_mq, min_10X, min_50X, max_secondary, min_pos_count, min_med_count, max_qc_flags):
 
-    df = reads_qc_df.merge(amplicon_qc_df, on="sample_id", how="left")
+    df = reads_qc_df \
+        .merge(amplicon_qc_df, on="sample_id", how="left") \
+        .merge(kraken2_df[kraken2_df["analysis_stage"]=="post_dehosting"], on = "sample_id", how="left")
 
     #define vars
     gc_low =  df["gc_content_after_filtering"].mean(axis=0) - df["gc_content_after_filtering"].std() 
@@ -67,6 +68,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_
         "abnormal_gc": (df["gc_content_after_filtering"] < gc_low) | (df["gc_content_after_filtering"] > gc_high),
         "insufficient_cycles": ((df["read1_mean_length_after_filtering"] <= read_length_low) | (df["read2_mean_length_after_filtering"] <= read_length_low)),
         "excessive_cycles": ((df["average_length"]!=0) & ((df["read1_mean_length_after_filtering"] >= read_length_high) | (df["read2_mean_length_after_filtering"] >= read_length_high))),
+        "excessive_host_content": df["host_perc"] > max_host,
         "low_q20": df["q20_rate_after_filtering"] < min_q20,
         "low_q30": df["q30_rate_after_filtering"] < min_q30,
         "low_bq": df["average_quality"] < min_bq,
@@ -84,6 +86,7 @@ def sample_qc_filter(reads_qc_df, amplicon_qc_df, min_q20, min_q30, min_bq, min_
     hard_fail_rules = {
         "no_amplicons_detected": (df[amplicon_qc_median] < min_med_count).all(axis=1),
         "low_reads": df["num_mapped_reads"] < min_map,
+        "insufficient_pathogen_content": df["pathogen_perc"] < min_pathogen,
     }
 
     #add flag name as col and bool for samples
@@ -181,7 +184,8 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
 def main(args):
     read_aln_df = ingest_seq_results(args.fastp_qc, args.bam_qc, args.samtools_stats)
     amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts)
-    qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, args.min_q20, args.min_q30, args.min_bq, 
+    kraken_df = pd.read_csv(args.kraken2_tsv, sep = "\t", header=0)
+    qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, kraken_df, args.max_host, args.min_pathogen, args.min_q20, args.min_q30, args.min_bq, 
                                                                args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
                                                                args.min_mq, args.min_10x, args.min_50x, args.max_secondary, args.min_pos_count, 
                                                                args.min_med_amp_count, args.max_qc_flags)
@@ -198,9 +202,12 @@ if __name__ == '__main__':
     parser.add_argument("--amplicon_counts", type=str, required=True, help="Aggregated counts of query sequences")
     parser.add_argument("--bam_qc", type=str, required=True, help="Aggregated qualimap alignment QC")
     parser.add_argument("--samtools_stats", type=str, required=True, help="Aggregated SAMtools stats for alignment QC")
+    parser.add_argument("--kraken2_tsv", type=str, required=True, help="Aggregated Kraken2 results")
     parser.add_argument("--vcf_file", type=str, required=True, help="Aggregated LoFreq SNPs")
     parser.add_argument("--amplicon_bed", type = str, required=True, help="Bed file of all amplicons produced by amplicon_coverage process")
     parser.add_argument("--qc_output", type=str, required=False, help="Name of output file to write QC summary to")
+    parser.add_argument("--min_pathogen", type=float, required=True, help="Minimum acceptable proportion of target pathogen in sample after dehosting, exclusive")
+    parser.add_argument("--max_host", type=float, required=True, help="Maximum acceptable proportion of host in sample after dehosting, exclusive")
     parser.add_argument("--min_q20", type=float, required=True, help="Minimum threshold for Q20 rate")
     parser.add_argument("--min_q30", type=float, required=True, help="Minimum threshold for Q30 rate")
     parser.add_argument("--min_bq", type=int, required=True, help="Minimum average base quality threshold")

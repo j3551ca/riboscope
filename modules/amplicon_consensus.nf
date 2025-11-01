@@ -246,6 +246,31 @@ process samtools_stats {
     """
 }
 
+process extract_fastq_from_bam {
+    tag { sample_id }
+    
+    input:
+    tuple val(sample_id), path(trimmed_mapped_bam)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_R1.dehost.fastq.gz"), path("${sample_id}_R2.dehost.fastq.gz"), emit: dehosted_reads
+
+    script:
+    """
+    samtools sort \
+    -n \
+    -o read_name_sorted.bam \
+    ${trimmed_mapped_bam[0]}
+    
+    samtools fastq \
+      -@ ${task.cpus} \
+      read_name_sorted.bam \
+      -1 ${sample_id}_R1.dehost.fastq.gz \
+      -2 ${sample_id}_R2.dehost.fastq.gz \
+      -s ${sample_id}_singletons.dehost.fastq.gz
+    """
+}
+
 
 process samtools_mpileup {
 
@@ -287,6 +312,84 @@ process samtools_mpileup {
     """
 }
 
+process make_consensus {
+
+    tag { sample_id }
+
+    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_consensus_masked_iupac.fasta"
+
+    input:
+    tuple val(sample_id), path(lofreq_vcf), path(ref), path(depths), val(min_vaf)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_consensus_masked_iupac.fasta"), emit: consensus_seq
+
+    script:
+    """
+    samtools faidx ${ref} 
+
+    awk 'NR>1 && \$4 < ${params.min_depth} { print \$1 "\t" \$2 }' ${depths} > lowcov.mask.tsv
+
+    # filter original lofreq vcf to match formatted tsv vcf - header/ format required for bcftools
+    bcftools view \
+    -i "INFO/AF>=${min_vaf}" \
+    ${lofreq_vcf} \
+    -o sample_af_filtered.vcf
+    
+    # block gzip vcf
+    bgzip -@4 -c sample_af_filtered.vcf > sample_af_filtered.vcf.gz 
+    tabix -p vcf sample_af_filtered.vcf.gz
+
+    #normalize (split multiallelic calls - already done by lofreq - & left align indels)
+    bcftools norm \
+    -m \
+    -both \
+    -f ${ref} \
+    sample_af_filtered.vcf.gz \
+    -Oz \
+    -o sample_af.norm.vcf.gz
+
+    tabix -p vcf sample_af.norm.vcf.gz
+
+    # 1. take header from original vcf + new cols format and sample (for GT)
+    # 2. take body from original vcf & add pseudo genotype col for bcftools iupac (0/0=ref, 0/1=mixed, 1/1=alt)
+    # based on v4.2 vcf https://samtools.github.io/hts-specs/VCFv4.2.pdf
+
+    ( bcftools view -h "sample_af.norm.vcf.gz" \
+    | grep -v "^#CHROM" && \
+    echo '##FORMAT=<ID=GT,Number=1,Type=String,Description="Pseudo genotype from AF">' && \
+    echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE"
+    ) > vcf_header.tmp
+
+    bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO\n' sample_af.norm.vcf.gz | \
+    awk -v min_iupac=${params.min_iupac} -v max_iupac=${params.max_iupac} 'BEGIN{OFS="\t"}{
+    af=0
+    if (match(\$8,/AF=([0-9.eE+-]+)/,m)) af=m[1]
+    gt = (af < min_iupac) ? "0/0" : (af < max_iupac ? "0/1" : "1/1");
+    print \$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,"GT",gt,af
+    }' \
+    | sort -k1,1V -k2,2n -k11,11gr -s \
+    | cut -f1-10 \
+    > vcf_body.tmp
+
+    cat vcf_header.tmp vcf_body.tmp | bgzip > constructed.vcf.gz
+
+    tabix -p vcf constructed.vcf.gz
+
+    #default bcftools consensus -s - -I on sample_af.norm.vcf.gz == -I on constructed.vcf.gz with min_iupac=0 & max_iupac=0.5
+
+    bcftools consensus \
+    -f ${ref} \
+    -m lowcov.mask.tsv \
+    -I \
+    --mark-del - \
+    constructed.vcf.gz \
+    > consensus.fasta
+
+    awk -v h=">${sample_id}" 'NR==1{\$0=h} {print}' consensus.fasta > ${sample_id}_consensus_masked_iupac.fasta
+    """
+}
+
 
 process amplicon_coverage {
 
@@ -315,127 +418,6 @@ process amplicon_coverage {
     """
 }
 
-
-process make_consensus {
-
-    tag { sample_id }
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.primertrimmed.consensus.fa", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(alignment)
-
-    output:
-    tuple val(sample_id), path("${sample_id}.primertrimmed.consensus.fa"), emit: consensus
-    tuple val(sample_id), path("${sample_id}_make_consensus_provenance.yml"), emit: provenance
-
-    script:
-    """
-    printf -- "- process_name: make_consensus\\n"     >> ${sample_id}_make_consensus_provenance.yml
-    printf -- "  tools:\\n"                           >> ${sample_id}_make_consensus_provenance.yml
-    printf -- "    - tool_name: ivar\\n"              >> ${sample_id}_make_consensus_provenance.yml
-    printf -- "      tool_version: \$(ivar version 2>&1 | head -n 1 | cut -d ' ' -f 3)\\n" >> ${sample_id}_make_consensus_provenance.yml
-    printf -- "      subcommand: consensus\\n"        >> ${sample_id}_make_consensus_provenance.yml
-
-    samtools mpileup -aa -A -B -d ${params.max_depth} -Q 0 ${alignment[0]} \
-	| ivar consensus \
-	-t ${params.unambiguous_allele_freq_threshold} \
-	-m ${params.min_depth} \
-        -n N \
-	-p ${sample_id}.primertrimmed.consensus
-    """
-}
-
-process align_consensus_to_ref {
-
-    tag { sample_id }
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_vs_ref.aln.fa", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(consensus), path(ref)
-
-    output:
-    tuple val(sample_id), path("${sample_id}_vs_ref.aln.fa"), emit: alignment
-    tuple val(sample_id), path("${sample_id}_align_consensus_to_ref_provenance.yml"), emit: provenance
-
-    script:
-    awk_string = '/^>/ {printf("\\n%s\\n", $0); next; } { printf("%s", $0); }  END { printf("\\n"); }'
-    """
-    printf -- "- process_name: align_consensus_to_ref\\n" >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "  tools:\\n"                               >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "    - tool_name: mafft\\n"                  >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "      tool_version: \$(mafft --version 2>&1 | cut -d ' ' -f 1)\\n" >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "      parameters:\\n"                       >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "        - parameter: --preservecase\\n"     >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "          value: null\\n"                   >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "        - parameter: --keeplength\\n"       >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "          value: null\\n"                   >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "        - parameter: --add\\n"              >> ${sample_id}_align_consensus_to_ref_provenance.yml
-    printf -- "          value: null\\n"                   >> ${sample_id}_align_consensus_to_ref_provenance.yml
-
-    mafft \
-        --preservecase \
-        --keeplength \
-        --add \
-        ${consensus} \
-        ${ref[0]} \
-        > ${sample_id}_vs_ref_multi_line.aln.fa
-    awk '${awk_string}' ${sample_id}_vs_ref_multi_line.aln.fa > ${sample_id}_vs_ref.aln.fa
-    """
-}
-
-
-process minimap2 {
-
-    tag { sample_id }
-    
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_${short_long}.{bam,bam.bai}"
-
-    input:
-    tuple val(sample_id), path(reads), path(ref), path(ref_index)
-
-    output:
-    tuple val(sample_id), val(short_long), path("${sample_id}_${short_long}.{bam,bam.bai}"), emit: alignment
-    tuple val(sample_id), path("${sample_id}_minimap2_provenance.yml"), emit: provenance
-    
-    script:
-    short_long = "long"
-    minimap2_threads = task.cpus - 4
-    samtools_view_filter_flags = params.skip_alignment_cleaning ? "0" : "1540"
-    """
-    printf -- "- process_name: \"minimap2\"\\n" >> ${sample_id}_minimap2_provenance.yml
-    printf -- "  tools:\\n"                     >> ${sample_id}_minimap2_provenance.yml
-    printf -- "    - tool_name: minimap2\\n"    >> ${sample_id}_minimap2_provenance.yml
-    printf -- "      tool_version: \$(minimap2 --version)\\n"  >> ${sample_id}_minimap2_provenance.yml
-    printf -- "      parameters:\\n"            >> ${sample_id}_minimap2_provenance.yml
-    printf -- "        - parameter: -a\\n"      >> ${sample_id}_minimap2_provenance.yml
-    printf -- "          value: null\\n"        >> ${sample_id}_minimap2_provenance.yml
-    printf -- "        - parameter: -x\\n"      >> ${sample_id}_minimap2_provenance.yml
-    printf -- "          value: map-ont\\n"     >> ${sample_id}_minimap2_provenance.yml
-    printf -- "        - parameter: -MD\\n"     >> ${sample_id}_minimap2_provenance.yml
-    printf -- "          value: null\\n"        >> ${sample_id}_minimap2_provenance.yml
-    printf -- "    - tool_name: samtools\\n"    >> ${sample_id}_minimap2_provenance.yml
-    printf -- "      tool_version: \$(samtools 2>&1 | grep 'Version' | cut -d ' ' -f 2)\\n"  >> ${sample_id}_minimap2_provenance.yml
-    printf -- "      subcommand: view\\n"       >> ${sample_id}_minimap2_provenance.yml
-    printf -- "      parameters:\\n"            >> ${sample_id}_minimap2_provenance.yml
-    printf -- "        - parameter: -F\\n"      >> ${sample_id}_minimap2_provenance.yml
-    printf -- "          value: ${samtools_view_filter_flags}\\n"        >> ${sample_id}_minimap2_provenance.yml
-
-    minimap2 \
-	-t ${minimap2_threads} \
-	-ax map-ont \
-	-R "@RG\\tID:${sample_id}-ONT\\tSM:${sample_id}\\tPL:ONT" \
-	-MD \
-	${ref} \
-	${reads} \
-	| samtools view -@ 2 -h -F ${samtools_view_filter_flags} \
-	| samtools sort -@ 2 -l 0 -m 1000M -O bam \
-	> ${sample_id}_${short_long}.bam
-
-    samtools index ${sample_id}_${short_long}.bam
-    """
-}
 
 process plot_coverage {
 

@@ -1,11 +1,11 @@
 process qc_filter {
 
     tag { "Applying sample QC" }
-    publishDir "${params.outdir}", pattern: "${params.qc_output}", mode: 'copy'
+    publishDir "${params.outdir}", pattern: "${params.qc_output}.csv", mode: 'copy'
 
     input:
     tuple path(read_results), path(alignment_results), path(samtools_results),
-     path(rrna_counts), path(vcf_results), path(amp_bed)
+     path(rrna_counts), path(vcf_results), path(amp_bed), path(kraken_results)
 
     output:
     tuple path("${params.qc_output}.csv"), path("reportable_vcf.tsv"), path("amplicon_counts.csv"), path("failed_amplicons.csv"), emit: qc_results
@@ -16,9 +16,12 @@ process qc_filter {
     --fastp_qc ${read_results} \
     --bam_qc ${alignment_results} \
     --samtools_stats ${samtools_results} \
+    --kraken2_tsv ${kraken_results} \
     --amplicon_counts ${rrna_counts} \
     --vcf_file ${vcf_results} \
     --amplicon_bed ${amp_bed} \
+    --min_pathogen ${params.min_pathogen} \
+    --max_host ${params.max_host} \
     --min_q20 ${params.min_q20_rate} \
     --min_q30 ${params.min_q30_rate} \
     --min_bq ${params.min_mean_bq} \
@@ -43,7 +46,7 @@ process report_results {
     publishDir "${params.outdir}", pattern: "*_report.html", mode: "copy"
 
     input:
-    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons)
+    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons), path(kraken2_tsv)
 
     output:
     path("*.html")
@@ -53,6 +56,7 @@ process report_results {
     report_results.py \
     --qc_summary ${qc_summary} \
     --reportable_vcf ${annotated_vcf} \
+    --kraken2_tsv ${kraken2_tsv} \
     --amplicon_counts ${amplicon_counts} \
     --failed_amplicons ${failed_amplicons} \
     --html_template ${params.html_template} \

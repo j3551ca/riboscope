@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 import plotly.express as px
 from datetime import datetime
 
-def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
+def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons, kraken2_tsv):
     """
     Read in QC results as pandas.DataFrames for use in html report generation.
     """
@@ -15,6 +15,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     reportable_vcf = pd.read_csv(annotated_vcf, header=0, sep="\t")
     amplicon_df = pd.read_csv(amp_df, header=0)
     failed_amplicon_df = pd.read_csv(failed_amplicons, header=0)
+    kraken_df = pd.read_csv(kraken2_tsv, header = 0, sep ="\t")
 
     #prep vcf table for viz & summarizing 
     reportable_vcf["snv"] = reportable_vcf["ref"].astype(str) + reportable_vcf["pos"].astype(str) + reportable_vcf["alt"]
@@ -27,7 +28,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons):
     reportable_vcf["sample_count"] = reportable_vcf["count"].astype(str) + "/" + reportable_vcf["total_pool_count"].astype(str)
     reportable_vcf["vaf"] = (reportable_vcf["af"]*100).round(1).astype(str) + "%"
 
-    return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df)
+    return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df, kraken_df)
 
 
 def summarize_results(qc_summary, vcf_df, ref):
@@ -88,7 +89,7 @@ def plot_amplicons(failed_amps):
     fig.update_layout(title="Sequencing Success of Amplicons",
                         coloraxis_showscale=False,
                         autosize=True,
-                        height=n_samples*30,
+                        height=450 if n_samples <=20 else n_samples*30,
                         width=n_amplicons*200)
     
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
@@ -142,11 +143,100 @@ def plot_heatmap(raw_counts):
         labels=dict(x="Sequence", y="Sample", color="Count")
     )
     fig.update_layout(title="Presence of Query Sequences in rRNA Repeat Regions",
-                      height=n_samples*13)
+                      height=600 if n_samples <=20 else n_samples*13)
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
 
 
-def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, html_template, n_flags, min_med_amp_count):
+def plot_taxonomy(kraken_results):
+    """
+    Stacked bar chart of taxonomic classification of reads to host, pathogen, unclassified, & other.
+    """
+    read_values = [ c for c in kraken_results.columns if "reads" in c]
+    perc_values = [c for c in kraken_results.columns if "perc" in c]
+
+    read_long = pd.melt(kraken_results, 
+                        id_vars = ["sample_id", "analysis_stage"], 
+                        value_vars=read_values, 
+                        var_name = "origin", value_name="reads")
+    perc_long = pd.melt(kraken_results, 
+                        id_vars = ["sample_id","analysis_stage"], 
+                        value_vars=perc_values, 
+                        var_name="origin", value_name="percentage")
+
+    read_long["origin"] = read_long["origin"].str.replace("_reads", "")
+    perc_long["origin"] = perc_long["origin"].str.replace("_perc", "")
+
+    df = read_long.merge(perc_long, 
+                            on = ["sample_id", "analysis_stage", "origin"])
+
+    # ensure pre comes before post-dehosting
+    df = df.sort_values("analysis_stage", ascending=False)
+
+    #y-axis order
+    sort_order_pre = df[(df["origin"]=="pathogen") & (df["analysis_stage"]=="pre_dehosting")]\
+        .sort_values("reads", ascending=False)["sample_id"].tolist()
+
+    stack_order = ["pathogen", "host", "unclassified", "other"]
+
+    n_samples = len(df["sample_id"].unique())
+
+    df["total_reads"] = df.groupby(["sample_id", "analysis_stage"])["reads"].transform("sum").astype(str)
+
+    df["analysis_stage"] = df["analysis_stage"].replace({"pre_dehosting": "Before Dehosting",
+                                                        "post_dehosting": "After Dehosting"})
+
+    fig = px.bar(df, 
+            x = "reads", 
+            y = "sample_id", 
+            facet_col="analysis_stage", 
+            color="origin", 
+            text="percentage", 
+            hover_data={"origin":True, "percentage": True, 
+                        "reads": ":.0f","total_reads": True, 
+                        "analysis_stage": True, "sample_id": True},
+            orientation="h",
+            category_orders={"sample_id": sort_order_pre,
+                            "origin": stack_order[::-1]},
+            color_discrete_map={
+            "pathogen": "#1b469d",
+            "host": "#F54927",
+            "unclassified": "#1b9d66",
+            "other": "#7f7f7f"
+        },
+            template="plotly_white", 
+            opacity = 0.9)
+
+    fig.update_xaxes(matches="x")
+    fig.update_xaxes(title_text="", row=1, col=1)
+    fig.update_xaxes(title_text="", row=1, col=2)
+    fig.update_layout(
+        title="Taxonomic Classification of Reads",
+        title_x=0.5,
+        height= 600 if n_samples <=20 else n_samples*13,
+        yaxis_title="Sample Name",
+        annotations=[
+            dict(
+                text="Number of Reads",
+                x=0.5,
+                y=-0.1,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14)
+            )
+        ],
+        legend=dict(traceorder="reversed"),
+        margin=dict(b=50),
+        )
+    fig.update_traces(
+        texttemplate="%{text:.2f}%",   
+        textposition="inside",      
+    )
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1], font=dict(size=14)))
+
+    return fig.to_html(full_html=False, include_plotlyjs="cdn")
+
+def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, taxon_fig, html_template, n_flags, min_med_amp_count):
     """
     Take outputs of functions as input for html template file and render.
     """
@@ -163,6 +253,7 @@ def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, 
         date=datetime.now().strftime("%Y-%m-%d %H:%M"),
         amplicon_plot=amplicon_fig,
         snp_plot=snp_fig,
+        taxon_plot = taxon_fig,
         heatmap_plot=count_heatmap)
 
     with open("results_report.html", "w") as f:
@@ -171,15 +262,17 @@ def generate_html(amplicon_fig, snp_fig, count_heatmap, summary_data, qc_flags, 
 
 def main(args):
 
-    qc_df, amplicon_df, reportable_vcf, failed_amps = ingest_qc_results(args.qc_summary, 
+    qc_df, amplicon_df, reportable_vcf, failed_amps, kraken_df = ingest_qc_results(args.qc_summary, 
                                                                         args.amplicon_counts, 
                                                                         args.reportable_vcf, 
-                                                                        args.failed_amplicons)
+                                                                        args.failed_amplicons,
+                                                                        args.kraken2_tsv)
     summary_df, qc_flags = summarize_results(qc_df, reportable_vcf, args.ref)
     amp_fig = plot_amplicons(failed_amps)
     snv_fig = plot_vcf(reportable_vcf)
     count_fig = plot_heatmap(amplicon_df)
-    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, 
+    taxon_fig = plot_taxonomy(kraken_df)
+    generate_html(amp_fig, snv_fig, count_fig, summary_df, qc_flags, taxon_fig,
                   args.html_template, args.n_qc_flag, args.min_med_amp_count)
 
 
@@ -189,6 +282,7 @@ if __name__ == '__main__':
     parser.add_argument("--amplicon_counts", type=str, required=True, help="Amplicon query sequence count table")
     parser.add_argument("--reportable_vcf", type=str, required=True, help="VCF file annotated with repeat presence/absence")
     parser.add_argument("--failed_amplicons", type=str, required=True, help="Amplicon pass/fail status per sample")
+    parser.add_argument("--kraken2_tsv", type=str, required=True, help="Kraken2 results summary tsv file")
     parser.add_argument("--html_template", type=str, required=True, help="html template file for results report")
     parser.add_argument("--ref", type=str, required=True, help="Reference genome used during alignment and variant calling")
     parser.add_argument("--n_qc_flag", type=str, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
