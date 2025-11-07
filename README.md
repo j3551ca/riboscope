@@ -116,7 +116,7 @@ Kraken2 and Bracken provide taxonomic classification and abundance estimation on
 |:----|:-----|:-----|:-----|
 | Paired-end sequencing reads |  `fastq_input`  | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).    |  none    |
 |Reference genome | `ref` |  Reference genome used to align reads to during guided assembly    |  none    |
-|BED file	 | `bed`  | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1)    |  none    |
+|BED file	 | `bed`  | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1). Note that rows must be repeated for each gene copy (ex. 3 gene copies = same row 3 times)    |  none    |
 |MultiFASTA of query sequences | `search_seqs`  | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.     |  none    |
 
 ## Output
