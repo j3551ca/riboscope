@@ -22,12 +22,12 @@ include { samtools_stats }                 from './modules/amplicon_consensus.nf
 include { samtools_mpileup }               from './modules/amplicon_consensus.nf'
 include { amplicon_coverage }              from './modules/amplicon_consensus.nf'
 include { extract_fastq_from_bam }         from './modules/amplicon_consensus.nf'
-include { ref_dict; 
-expected_snps; 
-recalibrate_bq; 
-lofreq_indel;
-lofreq_call;
-filter_lofreq}                             from './modules/variant_identification.nf'
+include { ref_dict }                       from './modules/variant_identification.nf'
+include { expected_snps }                  from './modules/variant_identification.nf'
+include { recalibrate_bq }                 from './modules/variant_identification.nf'
+include { lofreq_indel }                   from './modules/variant_identification.nf'
+include { lofreq_call }                    from './modules/variant_identification.nf'
+include { filter_lofreq }                  from './modules/variant_identification.nf'
 include { qc_filter }                      from  './modules/sample_qc.nf'
 include { report_results }                 from  './modules/sample_qc.nf'
 include { make_consensus }                 from './modules/amplicon_consensus.nf'
