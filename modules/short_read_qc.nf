@@ -32,6 +32,8 @@ process fastp {
     -o ${sample_id}_trimmed_R1.fastq.gz \
     -O ${sample_id}_trimmed_R2.fastq.gz\
     --detect_adapter_for_pe \
+    --trim_poly_g \
+    --trim_poly_x \
     --failed_out ${sample_id}_fastp_failed_reads.txt 
     #--html ${sample_id}_fastp.html 
 
