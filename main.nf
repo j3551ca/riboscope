@@ -94,15 +94,6 @@ workflow {
     //ch_host_name = Channel.of(params.host_name)
     //ch_pathogen_name = Channel.of(params.pathogen_name)
 
-    kraken2_predehost(ch_fastq.combine(ch_kraken2_db.combine(ch_predehost)))
-
-    kraken2_summary_predehost(kraken2_predehost.out.kraken2_report.combine(ch_predehost))
-    
-    bracken_predehost(kraken2_predehost.out.kraken2_report
-    .combine(ch_bracken_db
-    .combine(ch_read_length
-    .combine(ch_taxonomy_level
-    .combine(ch_predehost)))))
 
     fastp(ch_fastq)
     detect_ribo_repeats(ch_fastq.combine(ch_search_seqs))
@@ -112,6 +103,16 @@ workflow {
     } else {
 	ch_reads_to_align = ch_fastq
     }
+
+    kraken2_predehost(ch_reads_to_align.combine(ch_kraken2_db.combine(ch_predehost)))
+
+    kraken2_summary_predehost(kraken2_predehost.out.kraken2_report.combine(ch_predehost))
+    
+    bracken_predehost(kraken2_predehost.out.kraken2_report
+    .combine(ch_bracken_db
+    .combine(ch_read_length
+    .combine(ch_taxonomy_level
+    .combine(ch_predehost)))))
 
     bwa_mem(ch_reads_to_align.join(ch_indexed_ref))
 
