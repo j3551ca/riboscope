@@ -65,6 +65,7 @@ process detect_ribo_repeats {
     do  
        count=\$( seqkit grep \
         -s \
+        -P \
         -i \
         -C \
         -p "\${seq}" \
