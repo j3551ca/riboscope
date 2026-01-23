@@ -162,6 +162,8 @@ workflow {
 
     filter_lofreq(lofreq_call.out.minor_alleles)
 
+    // TODO: vcf coord liftover if needed. 
+
     make_consensus(lofreq_call.out.minor_alleles.join(ch_ref.join(samtools_mpileup.out.depths.combine(ch_min_vaf))))
 
     // Collect multi-sample outputs
@@ -194,6 +196,13 @@ workflow {
 	    storeDir: "${params.outdir}"
 	)
 
+    //TODO: if liftover implemented, collect lifted over VCFs vcf_liftover.out.lifted_vcf
+    // if (params.use_liftover) {
+    //     vcf_ch = vcf_liftover.out.lifted_vcf
+    // } else {
+    //     vcf_ch = filter_lofreq.out.formatted_vcf
+    // }
+// replace filter_lofreq.out.formatted_vcf with vcf_ch in the following line:
     aggregate_snps = filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
