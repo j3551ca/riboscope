@@ -199,8 +199,8 @@ process adjust_variant_coordinates {
     """
     adjust_variant_coordinates.py \
     --gff ${gff} \
-    --vcf_in ${vcf} \
-    --vcf_out ${sample_id}.feature.annotated.vcf
+    --input_vcf ${vcf} \
+    --output_vcf ${sample_id}.feature.annotated.vcf
     """
 }
 
