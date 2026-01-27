@@ -183,28 +183,24 @@ process filter_lofreq {
     """
 }
 
-//TODO: vcf_liftover
-process vcf_liftover {
+process adjust_variant_coordinates {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.lifted.vcf", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.feature.annotated.vcf", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(vcf), path(liftover_chain), path(ref), path(ref_chain)
+    tuple val(sample_id), path(vcf), path(gff)
 
     output:
-    tuple val(sample_id), path("${sample_id}.lifted.vcf"), emit: lifted_vcf
+    tuple val(sample_id), path("${sample_id}.feature.annotated.vcf"), emit: feature_coord_vcf
 
     script:
     """
-    gatk LiftoverVcf \
-    -I ${vcf} \
-    -O ${sample_id}.lifted.vcf \
-    -CHAIN ${liftover_chain} \
-    -REJECT ${sample_id}.unmapped.vcf \
-    -R ${ref[0]} \
-    -TRG ${ref_chain[0]}
+    adjust_variant_coordinates.py \
+    --gff ${gff} \
+    --vcf_in ${vcf} \
+    --vcf_out ${sample_id}.feature.annotated.vcf
     """
 }
 

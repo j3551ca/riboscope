@@ -28,6 +28,7 @@ include { recalibrate_bq }                 from './modules/variant_identificatio
 include { lofreq_indel }                   from './modules/variant_identification.nf'
 include { lofreq_call }                    from './modules/variant_identification.nf'
 include { filter_lofreq }                  from './modules/variant_identification.nf'
+include { adjust_variant_coordinates }     from './modules/variant_identification.nf'
 include { qc_filter }                      from  './modules/sample_qc.nf'
 include { report_results }                 from  './modules/sample_qc.nf'
 include { make_consensus }                 from './modules/amplicon_consensus.nf'
@@ -72,6 +73,8 @@ workflow {
     } else {
 	error "BED file is required"
     }
+
+    ch_gff = Channel.fromPath(params.gff)
 
     if (params.search_seqs != 'NO_FILE') {
 	ch_search_seqs = Channel.fromPath(params.search_seqs)
@@ -202,8 +205,10 @@ workflow {
     // } else {
     //     vcf_ch = filter_lofreq.out.formatted_vcf
     // }
+    // adjust variant coordinates according to features provided in GFF - if NO_FILE, coords remain the same
+    vcf_ch = adjust_variant_coordinates(filter_lofreq.out.formatted_vcf.join(ch_gff)).out.feature_coord_vcf
 // replace filter_lofreq.out.formatted_vcf with vcf_ch in the following line:
-    aggregate_snps = filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
+    aggregate_snps = vcf_ch.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_lofreq.vcf",
