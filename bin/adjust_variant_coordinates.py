@@ -81,3 +81,18 @@ def load_gff(gff_str):
 
     return features
     
+
+# %%
+def main():
+    vcf_in = load_variants(args.input_vcf)
+    gff_in = load_gff(args.gff)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Adjust variant coordinates based on reference genome changes.")
+    parser.add_argument("--input_vcf", required=True, help="Path to the input VCF file with original variant coordinates.")
+    parser.add_argument("--output_vcf", required=True, help="Path to the output VCF file with adjusted variant coordinates.")
+    parser.add_argument("--gff", required=True, help="Path to the file containing reference genome changes.")
+    parser.add_argument("--fai", required=True, help="Path to the reference genome index file (.fai) to get reference length.")
+
+    args = parser.parse_args()  
+    main(args)
