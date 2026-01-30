@@ -81,7 +81,23 @@ def load_gff(gff_str):
 
     return features
     
+#%%
 
+def merge_annotated_intervals(intervals):
+    """
+    Merge overlapping intervals in GFF file. 
+    Used to extract unannotated intergenic regions downstream.
+    
+    :param intervals: features[["start", "end"]]
+    """
+    sorted_intervals = intervals.sort_values(by="start").values.tolist()
+    merged = [sorted_intervals[0]]
+    for s, e in sorted_intervals[1:]:
+        if s <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], e) #reassign the end of the last interval to the max between the current interval and the last interval (extend)
+        else:
+            merged.append([s, e])
+    return(merged)
 # %%
 def main():
     vcf_in = load_variants(args.input_vcf)
