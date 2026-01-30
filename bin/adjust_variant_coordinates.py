@@ -202,63 +202,6 @@ def map_variants_to_features(complete_gff, vcf):
 
     return updated_vcf
 
-
-
-
-
-
-
-
-#%%
-#######
-
-def extract_intergenic(intervals, ref_length):
-    intervals = sorted(intervals)
-    out, end = [], 1
-    for s, e in intervals:
-        if s > end:
-            out.append((end, s - 1))
-        end = max(end, e + 1)
-    if end <= ref_length:
-        out.append((end, ref_length))
-    return out
-#%%
-def adjust_coordinates(variants, features):
-    """
-    Adds associated feature and position in feature to 
-    variants in LoFreq TSV if GFF provided. If user does not provide
-    GFF, adds feature and feature_pos columns for consistency in downstream 
-    reporting and visualization. 
-    """
-    if features=="NO_FILE":
-        variants["FEATURE"] = "reference"
-        variants["FEATURE_POS"] = variants["POS"]
-
-    else:
-        features = features.sort(["seqid", "start"])
-        feature_name = []
-        feature_pos = []
-
-        # variants that land in gff features - reassign coordinates
-        for f in features.itertuples():
-            feat_hits = (
-                (variants["CHROM"] == f.seqid) &
-                (variants["POS"] >= f.start) &  
-                (variants["POS"] <= f.end) & 
-                variants["FEATURE"].isnull()
-            )
-
-            variants.loc[feat_hits, "FEATURE"] = f.feature
-            # assign coordinates in strand-aware manner
-            if f.strand == "+":
-                variants.loc[feat_hits, "FEATURE_POS"] = variants.loc[feat_hits, "POS"] - f.start + 1
-            else:
-                variants.loc[feat_hits, "FEATURE_POS"] = f.end - variants.loc[feat_hits, "POS"] + 1
-
-        # variants that do not land in gff features - assign "intergenic"
-        for v in variants.itertuples():
-
-
 # %%
 def main():
     vcf_in = load_variants(args.input_vcf)
