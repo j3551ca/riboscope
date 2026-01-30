@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #%%
 import argparse
+from intervaltree import IntervalTree
 import os
 import pandas as pd
 import re
@@ -149,7 +150,115 @@ def assemble_complete_gff(unannotated_intervals, features):
 
     return complete_gff
 
- 
+#%%
+
+def map_variants_to_features(complete_gff, vcf):
+    """
+    Find variant position relative to any feature it is found in. 
+    Adjusted positions are strand-aware and all features a variant overlaps with are reported
+    (ie. same mutation found in 2 features +/- strand will be reported twice, with coordinates 
+    relative to start of respective feature).
+
+    :param complete_gff: GFF dataframe containing user-annotated & imputed unannotated regions of reference sequence
+    :param vcf: VCF with positions relative to reference sequence
+    """
+    
+    # Build interval tree (half-open intervals, so end + 1 for inclusive)
+    # basically a dictionary of intervals, where any int overlapping it is key
+    # store feature name and strand as data for strand-aware position calculation
+    tree = IntervalTree.from_tuples(
+        (r.start, r.end + 1, {"name": r.feature, "strand": r.strand}) for r in complete_gff.itertuples()
+    )
+
+    # query each variant in VCF to find associated feature(s)
+    # calculate position in strand-aware way
+    results = []
+
+    for _, v in vcf.iterrows():
+        if v.POS == 0 and v.CHROM == "0": # handles samples without variants
+            results.append(
+            {**v.to_dict(),
+                "FEATURE_NAME": "N/A",
+                "FEATURE_STRAND": "N/A",
+                "FEATURE_POS": 0,
+            }
+        )
+            continue
+        for interval in tree[v.POS]:
+            feature_start = interval.begin
+            feature_end = interval.end - 1 # convert back from half-open that intervaltree does
+            strand = interval.data["strand"]
+            feature_name = interval.data["name"]
+            feature_position = v.POS - feature_start if strand == "+" else feature_end - v.POS
+            results.append(
+                {**v.to_dict(),
+                 "FEATURE_NAME": feature_name,
+                 "FEATURE_STRAND": strand,
+                 "FEATURE_POS": feature_position,
+                }
+            )
+
+        updated_vcf = pd.DataFrame(results)
+
+    return updated_vcf
+
+
+
+
+
+
+
+
+#%%
+#######
+
+def extract_intergenic(intervals, ref_length):
+    intervals = sorted(intervals)
+    out, end = [], 1
+    for s, e in intervals:
+        if s > end:
+            out.append((end, s - 1))
+        end = max(end, e + 1)
+    if end <= ref_length:
+        out.append((end, ref_length))
+    return out
+#%%
+def adjust_coordinates(variants, features):
+    """
+    Adds associated feature and position in feature to 
+    variants in LoFreq TSV if GFF provided. If user does not provide
+    GFF, adds feature and feature_pos columns for consistency in downstream 
+    reporting and visualization. 
+    """
+    if features=="NO_FILE":
+        variants["FEATURE"] = "reference"
+        variants["FEATURE_POS"] = variants["POS"]
+
+    else:
+        features = features.sort(["seqid", "start"])
+        feature_name = []
+        feature_pos = []
+
+        # variants that land in gff features - reassign coordinates
+        for f in features.itertuples():
+            feat_hits = (
+                (variants["CHROM"] == f.seqid) &
+                (variants["POS"] >= f.start) &  
+                (variants["POS"] <= f.end) & 
+                variants["FEATURE"].isnull()
+            )
+
+            variants.loc[feat_hits, "FEATURE"] = f.feature
+            # assign coordinates in strand-aware manner
+            if f.strand == "+":
+                variants.loc[feat_hits, "FEATURE_POS"] = variants.loc[feat_hits, "POS"] - f.start + 1
+            else:
+                variants.loc[feat_hits, "FEATURE_POS"] = f.end - variants.loc[feat_hits, "POS"] + 1
+
+        # variants that do not land in gff features - assign "intergenic"
+        for v in variants.itertuples():
+
+
 # %%
 def main():
     vcf_in = load_variants(args.input_vcf)
