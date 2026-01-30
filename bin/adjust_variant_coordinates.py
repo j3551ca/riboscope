@@ -115,7 +115,41 @@ def find_unannotated_intervals(merged_intervals, ref_length):
     )
     return [(s, e) for s, e in gaps if s <= e ] # make sure no whack intervals
 
-   
+#%%
+
+def assemble_complete_gff(unannotated_intervals, features):
+    """
+    Assemble a complete GFF dataframe with annotated and unannotated intervals.
+    Unannotated intervals are labeled as "intergenic".
+
+    :param unannotated_intervals: [(start, end), (start2, end2)] List of tuples specifying unannotated intervals
+    :param features: original user-annotated features dataframe from GFF file
+    """
+
+    intergenic_df = pd.DataFrame(
+        [
+            {"seqid": features["seqid"].iloc[0],
+            "source": "python",
+            "type": "unannotated",
+            "start": s,
+            "end": e,
+            "score": "N/A",
+            "strand": "+",
+            "phase": "N/A",
+            "feature": f"intergenic_{i+1}",
+            }
+            for i, (s,e) in enumerate(unannotated_intervals)
+        ]
+
+    )
+    
+    complete_gff = (pd.concat([features, intergenic_df], ignore_index=True)
+    .sort_values("start")
+    .reset_index(drop=True))
+
+    return complete_gff
+
+ 
 # %%
 def main():
     vcf_in = load_variants(args.input_vcf)
