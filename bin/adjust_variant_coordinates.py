@@ -98,6 +98,24 @@ def merge_annotated_intervals(intervals):
         else:
             merged.append([s, e])
     return(merged)
+#%%
+def find_unannotated_intervals(merged_intervals, ref_length):
+    """
+    Find regions from original reference seq that are unannotated -
+    regions between the merged overlapping intervals provided in GFF file.
+
+    :param merged_intervals: [[start, end], [start2, end2]]List of lists specifying merged annotated intervals
+    :param ref_length: int Length of original reference used during alignment & variant calling
+    """
+
+    # construct list of unannotated regions based on merged annotated regions
+    gaps = ([(1, merged_intervals[0][0] - 1)] if merged_intervals[0][0] > 1 else []
+        + [(merged_intervals[i][1] + 1, merged_intervals[i + 1][0] - 1) for i in range(len(merged_intervals) - 1)]
+        + [(merged_intervals[-1][1] + 1, ref_length)]
+    )
+    return [(s, e) for s, e in gaps if s <= e ] # make sure no whack intervals
+
+   
 # %%
 def main():
     vcf_in = load_variants(args.input_vcf)
