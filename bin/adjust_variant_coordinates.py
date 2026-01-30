@@ -100,6 +100,24 @@ def merge_annotated_intervals(intervals):
             merged.append([s, e])
     return(merged)
 #%%
+def get_ref_length(fai_path):
+    """
+    Obtain reference length from .fai for defining unannotated intervals.
+
+    :param fai_path: Path to fasta index
+    """
+    if not os.path.isfile(fai_path):
+            raise FileNotFoundError(f"FAI file not found: {fai_path}")
+    try:
+        with open(fai_path, "r") as f:
+            for line in f:
+                fai_cols = line.strip().split("\t")
+                ref_length = int(fai_cols[1])
+    except Exception as e:
+        raise ValueError(f"Failed to read FAI file: {fai_path}") from e
+
+    return ref_length
+
 def find_unannotated_intervals(merged_intervals, ref_length):
     """
     Find regions from original reference seq that are unannotated -
@@ -206,6 +224,21 @@ def map_variants_to_features(complete_gff, vcf):
 def main():
     vcf_in = load_variants(args.input_vcf)
     gff_in = load_gff(args.gff)
+    if gff_in=="NO_FILE":
+        print("No GFF file provided, skipping coordinate adjustment.")
+        vcf_out = vcf_in.copy()
+        vcf_out["FEATURE_NAME"] = "reference"
+        vcf_out["FEATURE_STRAND"] = "+",
+        vcf_out["FEATURE_POS"] = vcf_out["POS"]
+        vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
+        return
+    else:
+        merged_annotated_intervals = merge_annotated_intervals(gff_in[["start", "end"]])
+        unannotated_intervals = find_unannotated_intervals(merged_annotated_intervals, ref_length=get_ref_length(args.fai))
+        complete_gff = assemble_complete_gff(unannotated_intervals, gff_in)
+        vcf_out = map_variants_to_features(complete_gff, vcf_in)
+        vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Adjust variant coordinates based on reference genome changes.")
