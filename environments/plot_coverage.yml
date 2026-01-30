@@ -4,6 +4,7 @@ channels:
   - bioconda
 dependencies:
   - python=3
+  - intervaltree=3.2.1
   - seaborn=0.13.2
   - samtools=1.20
   - plotly=6.3.0
