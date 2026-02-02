@@ -1,13 +1,11 @@
 #!/usr/bin/env python
-#%%
+
 import argparse
 from intervaltree import IntervalTree
 import os
 import pandas as pd
 import re
 
-
-#%%
 
 def load_variants(vcf_path):
     if not os.path.isfile(vcf_path):
@@ -29,7 +27,7 @@ def load_variants(vcf_path):
         raise ValueError(f"VCF failed to be loaded as TSV: {vcf_path}") from e
     
     return variants
-#%%
+
 
 def extract_feature_name(gff_row):
     """
@@ -50,7 +48,6 @@ def extract_feature_name(gff_row):
     return "unspecified"
 
 
-#%%
 def load_gff(gff_str):
     if gff_str == "NO_FILE":
         features = gff_str
@@ -82,7 +79,6 @@ def load_gff(gff_str):
 
     return features
     
-#%%
 
 def merge_annotated_intervals(intervals):
     """
@@ -99,7 +95,8 @@ def merge_annotated_intervals(intervals):
         else:
             merged.append([s, e])
     return(merged)
-#%%
+
+
 def get_ref_length(fai_path):
     """
     Obtain reference length from .fai for defining unannotated intervals.
@@ -134,7 +131,6 @@ def find_unannotated_intervals(merged_intervals, ref_length):
     )
     return [(s, e) for s, e in gaps if s <= e ] # make sure no whack intervals
 
-#%%
 
 def assemble_complete_gff(unannotated_intervals, features):
     """
@@ -168,7 +164,6 @@ def assemble_complete_gff(unannotated_intervals, features):
 
     return complete_gff
 
-#%%
 
 def map_variants_to_features(complete_gff, vcf):
     """
@@ -220,12 +215,11 @@ def map_variants_to_features(complete_gff, vcf):
 
     return updated_vcf
 
-# %%
 def main():
     vcf_in = load_variants(args.input_vcf)
     gff_in = load_gff(args.gff)
     if gff_in=="NO_FILE":
-        print("No GFF file provided, skipping coordinate adjustment.")
+        print("No GFF file provided, skipping VCF coordinate adjustment.")
         vcf_out = vcf_in.copy()
         vcf_out["FEATURE_NAME"] = "reference"
         vcf_out["FEATURE_STRAND"] = "+",
