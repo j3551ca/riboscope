@@ -88,7 +88,6 @@ workflow {
     
     ch_indexed_ref = index_ref(ch_ref)
     ch_faidx_ref = faidx_ref(Channel.fromPath(params.ref))
-    .map { files -> files.sort { it.name.endsWith('.fa') ? 0 : 1 } }
     ch_min_vaf = Channel.of(params.min_vaf)
     ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
     ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
@@ -242,6 +241,7 @@ workflow {
 
     if (params.apply_qc) {
         amplicon_bed_file = amplicon_coverage.out.amplicon_bed
+        
         qc_filter(aggregate_fastp
         .combine(aggregate_bam
         .combine(aggregate_samtools

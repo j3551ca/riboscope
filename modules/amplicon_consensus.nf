@@ -24,7 +24,7 @@ process faidx_ref {
     path(ref)
 
     output:
-    path('ref{.fa,.fa.fai}'), emit: faidx_ref
+    tuple path('ref.fa'), path('ref.fa.fai'), emit: faidx_ref
 
     script:
     ref_filename = ref.getName()
