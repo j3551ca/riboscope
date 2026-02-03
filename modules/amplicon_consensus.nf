@@ -296,7 +296,7 @@ process samtools_mpileup {
     publishDir "${params.outdir}/${sample_id}", mode: 'copy', pattern: "${sample_id}_depths.tsv"
 
     input:
-    tuple val(sample_id), path(alignment), path(ref)
+    tuple val(sample_id), path(alignment), path(faidx_ref), path(faidx_fai)
 
     output:
     tuple val(sample_id), path("${sample_id}_depths.tsv"), emit: depths
