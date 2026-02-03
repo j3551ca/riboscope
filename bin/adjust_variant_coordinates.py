@@ -49,33 +49,31 @@ def extract_feature_name(gff_row):
 
 
 def load_gff(gff_str):
-    if gff_str == "NO_FILE":
-        features = gff_str
-    else:
-        if not os.path.isfile(gff_str):
-            raise FileNotFoundError(f"GFF file not found: {gff_str}")
-        try:
-            gff_cols = ["seqid", "source", "type",
-                        "start", "end", "score",
-                        "strand", "frame", "attributes"]
-            features = pd.read_csv(gff_str,
-                                sep="\t",
-                                comment="#",
-                                names=gff_cols,
-                                dtype={"seqid": str, 
-                                        "source": str, 
-                                        "type": str,
-                                        "start": int,
-                                        "end": int,
-                                        "score": float,
-                                        "strand": str,
-                                        "frame": str,
-                                        "attributes": str}
-                                        )
-        except Exception as e:
-            raise ValueError(f"GFF failed to be loaded as TSV: {gff_str}") from e
-        
-        features["feature"] = features["attributes"].apply(extract_feature_name)
+    
+    if not os.path.isfile(gff_str):
+        raise FileNotFoundError(f"GFF file not found: {gff_str}")
+    try:
+        gff_cols = ["seqid", "source", "type",
+                    "start", "end", "score",
+                    "strand", "frame", "attributes"]
+        features = pd.read_csv(gff_str,
+                            sep="\t",
+                            comment="#",
+                            names=gff_cols,
+                            dtype={"seqid": str, 
+                                    "source": str, 
+                                    "type": str,
+                                    "start": int,
+                                    "end": int,
+                                    "score": float,
+                                    "strand": str,
+                                    "frame": str,
+                                    "attributes": str}
+                                    )
+    except Exception as e:
+        raise ValueError(f"GFF failed to be loaded as TSV: {gff_str}") from e
+    
+    features["feature"] = features["attributes"].apply(extract_feature_name)
 
     return features
     
@@ -215,10 +213,9 @@ def map_variants_to_features(complete_gff, vcf):
 
     return updated_vcf
 
-def main():
+def main(args):
     vcf_in = load_variants(args.input_vcf)
-    gff_in = load_gff(args.gff)
-    if gff_in=="NO_FILE":
+    if args.gff=="NO_FILE":
         print("No GFF file provided, skipping VCF coordinate adjustment.")
         vcf_out = vcf_in.copy()
         vcf_out["FEATURE_NAME"] = "reference"
@@ -227,6 +224,7 @@ def main():
         vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
         return
     else:
+        gff_in = load_gff(args.gff)
         merged_annotated_intervals = merge_annotated_intervals(gff_in[["start", "end"]])
         unannotated_intervals = find_unannotated_intervals(merged_annotated_intervals, ref_length=get_ref_length(args.fai))
         complete_gff = assemble_complete_gff(unannotated_intervals, gff_in)
