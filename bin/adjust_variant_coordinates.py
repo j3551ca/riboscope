@@ -210,6 +210,10 @@ def map_variants_to_features(complete_gff, vcf):
             )
 
     updated_vcf = pd.DataFrame(results)
+    updated_vcf = updated_vcf.sort_values(
+    ["SAMPLE_ID", "FEATURE_NAME", "POS", "FEATURE_POS"],
+    kind="mergesort",
+)
 
     return updated_vcf
 
