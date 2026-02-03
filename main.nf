@@ -165,7 +165,9 @@ workflow {
 
     filter_lofreq(lofreq_call.out.minor_alleles)
 
-    vcf_ch = adjust_variant_coordinates(filter_lofreq.out.formatted_vcf.join(ch_gff)).out.feature_coord_vcf
+    adjust_variant_coordinates(filter_lofreq.out.formatted_vcf.combine(ch_gff.combine(ch_faidx_ref)))
+    
+    vcf_ch = adjust_variant_coordinates.out.feature_coord_vcf
 
     make_consensus(lofreq_call.out.minor_alleles.join(ch_ref.join(samtools_mpileup.out.depths.combine(ch_min_vaf))))
 
