@@ -190,7 +190,7 @@ process adjust_variant_coordinates {
     publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.feature.annotated.vcf", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(vcf), path(gff)
+    tuple val(sample_id), path(vcf), path(gff), path(faidx_ref), path(faidx_fai)
 
     output:
     tuple val(sample_id), path("${sample_id}.feature.annotated.vcf"), emit: feature_coord_vcf
