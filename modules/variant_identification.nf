@@ -237,30 +237,3 @@ process map_contigs {
 
     """
 }
-
-
-process call_variants {
-
-    tag { sample_id }
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(alignment), path(ref)
-
-    output:
-    tuple val(sample_id), path("${sample_id}.variants.tsv")
-
-    script:
-    """
-    samtools faidx ${ref}
-
-    samtools mpileup -aa -A -d ${params.max_depth} -B -Q 0 --reference ${ref} ${alignment[0]} \
-	| ivar variants \
-	-r ${ref} \
-	-m ${params.min_depth}  \
-	-q ${params.min_qual_for_variant_calling} \
-	-t ${params.ambiguous_allele_freq_threshold} \
-	-p ${sample_id}.variants
-    """
-}
