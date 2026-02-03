@@ -15,6 +15,7 @@ kraken2_summary_predehost}                 from './modules/short_read_qc.nf'
 include { summarize_kraken2 as 
 kraken2_summary_postdehost}                from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
+include { faidx_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
 include { trim_primer_sequences }          from './modules/amplicon_consensus.nf'
 include { qualimap_bamqc }                 from './modules/amplicon_consensus.nf'
@@ -86,6 +87,8 @@ workflow {
     hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
     
     ch_indexed_ref = index_ref(ch_ref)
+    ch_faidx_ref = faidx_ref(Channel.fromPath(params.ref))
+    .map { files -> files.sort { it.name.endsWith('.fa') ? 0 : 1 } }
     ch_min_vaf = Channel.of(params.min_vaf)
     ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
     ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
@@ -145,7 +148,7 @@ workflow {
 
     plot_amplicon_coverage(ch_amplicon_depths)
 
-    samtools_mpileup(ch_primer_trimmed_alignment.join(ch_ref))
+    samtools_mpileup(ch_primer_trimmed_alignment.combine(ch_faidx_ref)) 
 
     ch_per_base_depths = samtools_mpileup.out.depths
 
