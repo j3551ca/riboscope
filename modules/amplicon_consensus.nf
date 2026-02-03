@@ -16,6 +16,23 @@ process index_ref {
     """
 }
 
+process faidx_ref {
+
+    tag { ' faidx ' + ref_filename }
+
+    input:
+    path(ref)
+
+    output:
+    path('ref{.fa,.fa.fai}'), emit: faidx_ref
+
+    script:
+    ref_filename = ref.getName()
+    """
+    cp ${ref} ref.fa
+    samtools faidx ref.fa
+    """
+}
 
 process filter_residual_adapters {
 
