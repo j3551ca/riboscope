@@ -211,7 +211,7 @@ def map_variants_to_features(complete_gff, vcf):
                 }
             )
 
-        updated_vcf = pd.DataFrame(results)
+    updated_vcf = pd.DataFrame(results)
 
     return updated_vcf
 
@@ -222,7 +222,7 @@ def main():
         print("No GFF file provided, skipping VCF coordinate adjustment.")
         vcf_out = vcf_in.copy()
         vcf_out["FEATURE_NAME"] = "reference"
-        vcf_out["FEATURE_STRAND"] = "+",
+        vcf_out["FEATURE_STRAND"] = "+"
         vcf_out["FEATURE_POS"] = vcf_out["POS"]
         vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
         return
