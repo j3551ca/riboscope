@@ -317,8 +317,6 @@ process samtools_mpileup {
     printf -- "        - parameter: --count-orphans\\n" >> ${sample_id}_samtools_mpileup_provenance.yml
     printf -- "          value: null\\n"                >> ${sample_id}_samtools_mpileup_provenance.yml
 
-    samtools faidx ${ref}
-
     printf "chrom\tpos\tref\tdepth\n" > ${sample_id}_depths.tsv
 
     samtools mpileup -a \
