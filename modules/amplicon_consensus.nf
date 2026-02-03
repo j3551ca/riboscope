@@ -320,7 +320,7 @@ process samtools_mpileup {
     printf "chrom\tpos\tref\tdepth\n" > ${sample_id}_depths.tsv
 
     samtools mpileup -a \
-	--fasta-ref ${ref} \
+	--fasta-ref ${faidx_ref} \
 	--min-BQ 0 \
 	--count-orphans \
 	${alignment[0]} | cut -f 1-4 >> ${sample_id}_depths.tsv
