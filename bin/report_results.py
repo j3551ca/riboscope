@@ -270,7 +270,8 @@ def main(args):
                                                                         args.reportable_vcf, 
                                                                         args.failed_amplicons,
                                                                         args.kraken2_tsv)
-    summary_df, qc_flags = summarize_results(qc_df, reportable_vcf, args.ref)
+    summary_df, qc_flags = summarize_results(qc_df, reportable_vcf, args.ref, 
+                                             args.reporting_vaf, args.reporting_sample_perc)
     amp_fig = plot_amplicons(failed_amps)
     snv_fig = plot_vcf(reportable_vcf)
     count_fig = plot_heatmap(amplicon_df)
