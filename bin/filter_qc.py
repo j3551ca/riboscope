@@ -164,10 +164,10 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
     annotated_vcf = (
     pass_variants.merge(amplicon_bed, on="chrom", how="left")
                 .query("start <= pos <= end")
-                .drop_duplicates(subset=["chrom","pos", "sample_id","alt","af"]) 
+                .drop_duplicates(subset=["chrom","pos", "sample_id","alt","af", "feature_name"]) 
                 .reset_index(drop=True)
                 .drop(["start", "end", "name"], axis = 1)
-    ) # drops failed samples becasue they have 0 in chrom of vcf file ^ 
+    ) # drops failed samples because they have 0 in chrom of vcf file ^ 
 
     # add which repeats are represented in each pool based on failed amplicon minimum median query seq count
     # this vcf df is now ready for plotting
