@@ -160,7 +160,7 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
         .apply(summarize_repeats, include_groups=False)
         .reset_index(name="repeat_status")
     )
-    # add pool/ gene depending on regions to vcf df
+    # add pool/ gene depending on amplicon regions to vcf df
     annotated_vcf = (
     pass_variants.merge(amplicon_bed, on="chrom", how="left")
                 .query("start <= pos <= end")

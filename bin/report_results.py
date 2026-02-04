@@ -19,6 +19,7 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons, 
 
     #prep vcf table for viz & summarizing 
     reportable_vcf["snv"] = reportable_vcf["ref"].astype(str) + reportable_vcf["pos"].astype(str) + reportable_vcf["alt"]
+    reportable_vcf["feature_snv"] = reportable_vcf["ref"].astype(str) + reportable_vcf["feature_pos"].astype(str) + reportable_vcf["alt"]
     reportable_vcf = reportable_vcf.sort_values("pos", ascending=True)
     snv_counts = reportable_vcf.groupby("snv")["sample_id"].nunique().rename("count")
     reportable_vcf = reportable_vcf.merge(snv_counts, on="snv", how="left")
