@@ -31,23 +31,25 @@ def ingest_qc_results(qc_summary_file, amp_df, annotated_vcf, failed_amplicons, 
     return(qc_df, amplicon_df, reportable_vcf, failed_amplicon_df, kraken_df)
 
 
-def summarize_results(qc_summary, vcf_df, ref):
+def summarize_results(qc_summary, vcf_df, ref, reporting_vaf, reporting_sample_perc):
     """
     Summarize sample pass/ fail and SNP results - results overview.
     """
 
     vcf_df["pool"]=vcf_df["pool"].replace({"pool1":"16S","pool2":"23S"})
+    reporting_vaf=float(reporting_vaf)
+    reporting_sample_perc = float(reporting_sample_perc)
 
     results_df = pd.DataFrame({"metric":["Total Number of Samples", 
                             "Number of Failed Samples", 
-                            "SNPs ≥90% Frequency", 
-                            "SNPs ≥30% Samples",
+                            f"SNPs ≥{reporting_vaf*100:.1f}% Frequency", 
+                            f"SNPs ≥{reporting_sample_perc*100:.1f}% Samples",
                             "Reference Genome"],
                  "results": [len(qc_summary["sample_id"]), 
                              len(qc_summary[qc_summary["qc_fail"]]), 
-                             ",<br>".join(vcf_df[vcf_df["af"]>=0.9][["snv", "pool"]]
+                             ",<br>".join(vcf_df[vcf_df["af"]>=reporting_vaf][["snv", "pool"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
-                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=0.3][["snv", "pool"]]
+                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=reporting_sample_perc][["snv", "pool"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
                                         os.path.abspath(ref)]})
     
@@ -287,6 +289,8 @@ if __name__ == '__main__':
     parser.add_argument("--ref", type=str, required=True, help="Reference genome used during alignment and variant calling")
     parser.add_argument("--n_qc_flag", type=str, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
     parser.add_argument("--min_med_amp_count", type=str, required=True, help="Minimum median query sequence counts to consider an amplicon as present")
+    parser.add_argument("--reporting_vaf", type=float, default=0.9, help="Minimum variant allele frequency in a given sample to report SNVs")
+    parser.add_argument("--reporting_sample_perc", type=float, default=0.3, help="Minimum percentage of total successfully sequenced samples containing a given SNV")
 
     args = parser.parse_args()
     main(args)
