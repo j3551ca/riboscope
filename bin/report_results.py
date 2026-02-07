@@ -39,7 +39,7 @@ def summarize_results(qc_summary, vcf_df, ref, reporting_vaf, reporting_sample_p
     Summarize sample pass/ fail and SNP results - results overview.
     """
 
-    vcf_df["pool"]=vcf_df["pool"].replace({"pool1":"16S","pool2":"23S"})
+    #vcf_df["pool"]=vcf_df["pool"].replace({"pool1":"16S","pool2":"23S"})
     reporting_vaf=float(reporting_vaf)
     reporting_sample_perc = float(reporting_sample_perc)
 
@@ -50,9 +50,9 @@ def summarize_results(qc_summary, vcf_df, ref, reporting_vaf, reporting_sample_p
                             "Reference Genome"],
                  "results": [len(qc_summary["sample_id"]), 
                              len(qc_summary[qc_summary["qc_fail"]]), 
-                             ",<br>".join(vcf_df[vcf_df["af"]>=reporting_vaf][["snv", "pool"]]
+                             ",<br>".join(vcf_df[vcf_df["af"]>=reporting_vaf][["feature_snv", "feature_name"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
-                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=reporting_sample_perc][["snv", "pool"]]
+                             ",<br>".join(vcf_df[(vcf_df["count"]/vcf_df["total_pool_count"])>=reporting_sample_perc][["feature_snv", "feature_name"]]
                                         .drop_duplicates().astype(str).agg("_".join, axis=1)),
                                         os.path.abspath(ref)]})
     
