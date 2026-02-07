@@ -118,12 +118,13 @@ def plot_features(complete_gff):
     ]
 
     record = GraphicRecord(sequence_length=gff.iloc[-1]["end"], features=features)
-    ax, _ = record.plot()
+    ax, _ = record.plot(figure_width=16)
 
     buf = io.BytesIO() 
     ax.figure.savefig(buf, format="svg", bbox_inches="tight")
     buf.seek(0)
     svg_features = buf.getvalue().decode("utf-8")
+    svg_features = svg_features.replace("<svg ", '<svg style="width:90%; height:auto;" ') 
 
     return svg_features
 
