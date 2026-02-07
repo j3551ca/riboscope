@@ -194,11 +194,14 @@ process adjust_variant_coordinates {
 
     output:
     tuple val(sample_id), path("${sample_id}.feature.annotated.vcf"), emit: feature_coord_vcf
+    path("complete.gff"), emit: complete_gff
+
 
     script:
     """
     adjust_variant_coordinates.py \
-    --gff ${gff} \
+    --input_gff ${gff} \
+    --output_gff "complete.gff" \
     --fai ${faidx_fai} \
     --input_vcf ${vcf} \
     --output_vcf ${sample_id}.feature.annotated.vcf
