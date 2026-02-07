@@ -164,9 +164,13 @@
     </div>
 
     <h2 id="snvs">SNVs Detected in rRNA of Treponema Pallidum</h2>
-    <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering oevr each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
-        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization.
+    <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering over each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
+        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization. Mutations are displayed relative to position in each genomic feature. Subplots correspond to genomic features displayed along reference sequence below. Genomic features in purple are provided by user and those in pink are computed and labeled as "intergenic_n". 
     </p>
+
+    <div class="plot">
+      {{ feature_plot | safe }}
+    </div>
 
     <div class="plot">
         {{ snp_plot | safe }}
