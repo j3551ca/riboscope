@@ -241,6 +241,7 @@ workflow {
 
     if (params.apply_qc) {
         amplicon_bed_file = amplicon_coverage.out.amplicon_bed
+        complete_gff_ch = adjust_variant_coordinates.out.complete_gff
         
         qc_filter(aggregate_fastp
         .combine(aggregate_bam
@@ -249,8 +250,9 @@ workflow {
         .combine(aggregate_snps
         .combine(amplicon_bed_file
         .combine(aggregate_kraken2)))))))
+
         report_results(qc_filter.out.qc_results
-        .combine(aggregate_kraken2))
+        .combine(aggregate_kraken2.combine(complete_gff_ch)))
     }
 /**
     // Collect Provenance
