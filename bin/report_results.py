@@ -131,31 +131,50 @@ def plot_features(complete_gff):
 
 def plot_vcf(vcf_df):
     """
-    Plot SNPs by pool and represent repeats present in pool with shape
+    Plot SNPs by pool and represent repeats present in pool with color.
+    If GFF file provided, plot SNPs by feature.
     """
+    n_feature = vcf_df["feature_name"].nunique()
+    n_col = 2
+    n_row = (n_feature/n_col)
+
     fig = px.scatter(vcf_df, 
-            x = "snv", 
+            x = "feature_snv", 
             y = "af",
             color="repeat_status",  # optional categorical coloring
             opacity=0.6,
             size="count",
             size_max=12,
-            hover_data={"snv":True, "af":False,"vaf":True, "sample_id":True, "count":False,"sample_count":True, "pool":False},  # info shown on hover
-            facet_col="pool",
+            hover_data={"feature_snv":True, "snv":True, "af":False,
+                        "vaf":True, "sample_id":True, "count":False,
+                        "sample_count":True, "pool":False},  # info shown on hover
+            facet_col="feature_name",
+            facet_col_wrap=n_col,
+            facet_row_spacing = 0.2,
             log_y=True,
             title="rRNA SNVs Across Samples",
             template="plotly_white")
     
     fig.update_traces(marker=dict(sizemin=4))
-    fig.update_xaxes(matches=None)
-    fig.update_xaxes(title_text="", row=1, col=1)
-    fig.update_xaxes(title_text="", row=1, col=2)
+    fig.update_xaxes(matches=None, showticklabels=True, title_text="")
+    fig.update_yaxes(title_text="")
     fig.update_layout(
         xaxis_title="",
         title_x=0.5,
-        height=600,
-        yaxis_title="Allele Frequency",
-        legend_title_text="Ribosomal Repeat")
+        height=200*n_row,
+        legend_title_text="Ribosomal Repeat",
+        )
+    
+    fig.add_annotation(
+    text="Allele frequency",
+    xref="paper",
+    yref="paper",
+    x=-0.5, # move left of plots
+    y=0.5,
+    showarrow=False,
+    textangle=-90,
+    font=dict(size=14),
+)
     fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 
     return fig.to_html(full_html=False, include_plotlyjs="cdn")
