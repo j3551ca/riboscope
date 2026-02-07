@@ -148,7 +148,8 @@ def assemble_complete_gff(unannotated_intervals, features):
             "end": e,
             "score": "N/A",
             "strand": "+",
-            "phase": "N/A",
+            "frame": "N/A",
+            "attributes": "N/A",
             "feature": f"intergenic_{i+1}",
             }
             for i, (s,e) in enumerate(unannotated_intervals)
