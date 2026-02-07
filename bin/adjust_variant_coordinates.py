@@ -220,7 +220,7 @@ def map_variants_to_features(complete_gff, vcf):
 
 def main(args):
     vcf_in = load_variants(args.input_vcf)
-    if args.gff=="NO_FILE":
+    if args.input_gff=="NO_FILE":
         print("No GFF file provided, skipping VCF coordinate adjustment.")
         vcf_out = vcf_in.copy()
         vcf_out["FEATURE_NAME"] = "reference"
@@ -229,10 +229,11 @@ def main(args):
         vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
         return
     else:
-        gff_in = load_gff(args.gff)
+        gff_in = load_gff(args.input_gff)
         merged_annotated_intervals = merge_annotated_intervals(gff_in[["start", "end"]])
         unannotated_intervals = find_unannotated_intervals(merged_annotated_intervals, ref_length=get_ref_length(args.fai))
         complete_gff = assemble_complete_gff(unannotated_intervals, gff_in)
+        complete_gff.to_csv(args.output_gff, sep="\t", index=False)
         vcf_out = map_variants_to_features(complete_gff, vcf_in)
         vcf_out.to_csv(args.output_vcf, sep="\t", index=False)
 
@@ -241,7 +242,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Adjust variant coordinates based on reference genome changes.")
     parser.add_argument("--input_vcf", required=True, help="Path to the input VCF file with original variant coordinates.")
     parser.add_argument("--output_vcf", required=True, help="Path to the output VCF file with adjusted variant coordinates.")
-    parser.add_argument("--gff", required=True, help="Path to the file containing reference genome changes.")
+    parser.add_argument("--input_gff", required=True, help="Path to the GFF file containing user-defined features.")
+    parser.add_argument("--output_gff", required=True, help= "Path to the GFF file containing user & program defined intergenic/ inter-feature regions.")
     parser.add_argument("--fai", required=True, help="Path to the reference genome index file (.fai) to get reference length.")
 
     args = parser.parse_args()  
