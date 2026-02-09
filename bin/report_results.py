@@ -167,7 +167,7 @@ def plot_vcf(vcf_df):
         )
     
     fig.add_annotation(
-    text="Allele frequency",
+    text="Allele Frequency",
     xref="paper",
     yref="paper",
     x=0, # move left of plots
