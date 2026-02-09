@@ -142,7 +142,7 @@ def plot_vcf(vcf_df):
     fig = px.scatter(vcf_df, 
             x = "feature_snv", 
             y = "af",
-            color="repeat_status",  # optional categorical coloring
+            color="repeat_status",
             opacity=0.6,
             size="count",
             size_max=12,
@@ -162,7 +162,7 @@ def plot_vcf(vcf_df):
     fig.update_layout(
         xaxis_title="",
         title_x=0.5,
-        height=200*n_row,
+        height=250*n_row,
         legend_title_text="Ribosomal Repeat",
         )
     
@@ -170,7 +170,7 @@ def plot_vcf(vcf_df):
     text="Allele frequency",
     xref="paper",
     yref="paper",
-    x=-0.5, # move left of plots
+    x=0, # move left of plots
     y=0.5,
     showarrow=False,
     textangle=-90,
