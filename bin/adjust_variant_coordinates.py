@@ -201,7 +201,7 @@ def map_variants_to_features(complete_gff, vcf):
             feature_end = interval.end - 1 # convert back from half-open that intervaltree does
             strand = interval.data["strand"]
             feature_name = interval.data["name"]
-            feature_position = v.POS - feature_start + 1 if strand == "+" else feature_end - v.POS + 1
+            feature_position = (v.POS - feature_start if strand == "+" else feature_end - v.POS) + 1
             results.append(
                 {**v.to_dict(),
                  "FEATURE_NAME": feature_name,
