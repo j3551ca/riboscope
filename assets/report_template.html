@@ -165,7 +165,9 @@
 
     <h2 id="snvs">SNVs Detected in rRNA of Treponema Pallidum</h2>
     <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering over each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
-        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization. Mutations are displayed relative to position in each genomic feature. Subplots correspond to genomic features displayed along reference sequence below. Genomic features in purple are provided by user and those in pink are computed and labeled as "intergenic_n". 
+        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization. Mutations are displayed relative to position in each genomic feature. The same mutation may appear in multiple features when there are overlapping features. The original position along the reference sequence is found under "snv" when hovering over a mutation,
+         while "feature_snv" shows the position of the mutation relative to the start of a specific feature from a given organism. The genomic features as well as the position are controlled by the user via GFF3 file. For example, a mutation may be reported relative to the start of a <em>Treponema pallidum</em> 23S rRNA gene or relative to an <em>Escherichia coli</em> 23S rRNA gene by simply aligning this gene to the reference and specifying the start and end positions in the GFF3 file. 
+        Subplots correspond to genomic features displayed along reference sequence below. Genomic features in purple are provided by user and those in pink are computed and labeled as "intergenic_n". 
     </p>
 
     <div class="plot">
