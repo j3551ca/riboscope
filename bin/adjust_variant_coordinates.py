@@ -123,7 +123,7 @@ def find_unannotated_intervals(merged_intervals, ref_length):
     """
 
     # construct list of unannotated regions based on merged annotated regions
-    gaps = ([(1, merged_intervals[0][0] - 1)] if merged_intervals[0][0] > 1 else []
+    gaps = (([(1, merged_intervals[0][0] - 1)] if merged_intervals[0][0] > 1 else [])
         + [(merged_intervals[i][1] + 1, merged_intervals[i + 1][0] - 1) for i in range(len(merged_intervals) - 1)]
         + [(merged_intervals[-1][1] + 1, ref_length)]
     )
