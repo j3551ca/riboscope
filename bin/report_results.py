@@ -151,7 +151,7 @@ def plot_vcf(vcf_df):
                         "sample_count":True, "pool":False},  # info shown on hover
             facet_col="feature_name",
             facet_col_wrap=n_col,
-            facet_row_spacing = 0.2,
+            facet_row_spacing = 0.9,
             log_y=True,
             title="rRNA SNVs Across Samples",
             template="plotly_white")
@@ -170,7 +170,7 @@ def plot_vcf(vcf_df):
     text="Allele Frequency",
     xref="paper",
     yref="paper",
-    x=0, # move left of plots
+    x=-0.05, # move left of plots
     y=0.5,
     showarrow=False,
     textangle=-90,
