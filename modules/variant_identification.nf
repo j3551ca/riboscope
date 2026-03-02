@@ -194,7 +194,7 @@ process adjust_variant_coordinates {
 
     output:
     tuple val(sample_id), path("${sample_id}.feature.annotated.vcf"), emit: feature_coord_vcf
-    path("complete.gff"), emit: complete_gff
+    path("complete.gff"), emit: complete_gff, optional: true
 
 
     script:
