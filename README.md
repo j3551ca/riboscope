@@ -6,6 +6,7 @@ This Nextflow pipeline monitors for mutations that may confer AMR in bacterial r
 
 ```
 nextflow run BCCDC-PHL/riboscope \
+  -r v0.9.9 \
   -profile conda \
   --cache ~/.conda/envs \
   --fastq_input /path/to/fastq_files \
@@ -91,7 +92,10 @@ Kraken2 and Bracken provide taxonomic classification and abundance estimation on
 
 ### Reporting Mutations According to Position in Genomic Feature(s)
 
-Users may optionally adjust reported positions of mutations according to where they are located in a specified genomic feature by providing a [GFF3](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/) file. Mutations are displayed relative to position in each genomic feature. The same mutation may appear in multiple features when there are overlapping features. Coordinates are reported in strand-aware manner. The original position along the reference sequence is found under "snv" when hovering over a mutation in the report, while "feature_snv" shows the position of the mutation relative to the start of a specific feature from a given organism. The genomic features as well as the position are controlled by the user via GFF3 file. For example, a mutation may be reported relative to the start of a <em>Treponema pallidum</em> 23S rRNA gene or relative to an <em>Escherichia coli</em> 23S rRNA gene by simply aligning this gene to the reference and specifying the start and end positions relative to the reference in the GFF3 file.
+Users may optionally adjust reported positions of mutations according to where they are located in a specified genomic feature by providing a [GFF3](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/) file. Mutations are displayed relative to position in each genomic feature. The same mutation may appear in multiple features when there are overlapping features. Coordinates are reported in strand-aware manner. The original position along the reference sequence is found under "snv" when hovering over a mutation in the report, while "feature_snv" shows the position of the mutation relative to the start of a specific feature from a given organism. The genomic features as well as the position are controlled by the user via GFF3 file. For example, a mutation may be reported relative to the start of a <em>Treponema pallidum</em> 23S rRNA gene or relative to an <em>Escherichia coli</em> 23S rRNA gene by simply aligning this gene to the reference and specifying the start and end positions relative to the reference in the GFF3 file. Note that this process is not gap-aware. For example, the position of the mutation relative to the reference sequence (POS = 4718) is converted to the equivalent position in the E.coli 23S rRNA gene (FEATURE_POS = 2100) but does not account for gaps from the E.coli 23S:TPA reference sequence pairwise alignment (42 gaps before position 2100, since E.coli 23S rRNA gene is “stretched” across the ref sequence). This means it is reported as 2100 in E.coli 23S rRNA gene but is actually 2100-42 gaps = 2058. Here is what the entry might look like in the VCF file for this example:
+ 
+CHROM POS REF ALT AF  DP4 SAMPLE_ID FEATURE_NAME  FEATURE_STRAND  FEATURE_POS
+NC_000919.1_ribo_rpt1 4718  A G 0.09  4730,7588,37,20 example_sample  ecoli_23S + 2100
 
 ## Input
 
