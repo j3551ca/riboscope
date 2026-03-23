@@ -41,11 +41,20 @@ include { collect_provenance }             from './modules/provenance.nf'
 workflow {
 
     ch_workflow_metadata = Channel.value([
-	workflow.sessionId,
+	nextflow.version,
+    workflow.sessionId,
 	workflow.runName,
 	workflow.manifest.name,
 	workflow.manifest.version,
+    workflow.userName,
 	workflow.start,
+    workflow.commandLine,
+    workflow.launchDir,
+    workflow.projectDir,
+    workflow.workDir,
+    workflow.repository,
+    workflow.commitId,
+    workflow.revision,
     ])
 
     ch_pipeline_provenance = pipeline_provenance(ch_workflow_metadata)

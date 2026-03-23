@@ -5,18 +5,26 @@ process pipeline_provenance {
     executor 'local'
 
     input:
-    tuple val(session_id), val(run_name), val(pipeline_name), val(pipeline_version), val(timestamp_analysis_start)
-
-    output:
-    file("pipeline_provenance.yml")
+    tuple val(nextflow_version), val(session_id), val(run_name), val(pipeline_name), val(pipeline_version), 
+    val(user), val(timestamp_analysis_start), val(command_line), val(launch_dir), val(project_dir), val(work_dir),
+    val(repo), val(commit_id), val(branch)
 
     script:
     """
-    printf -- "- pipeline_name: ${pipeline_name}\\n"                       >> pipeline_provenance.yml
-    printf -- "  pipeline_version: ${pipeline_version}\\n"                 >> pipeline_provenance.yml
-    printf -- "  nextflow_session_id: ${session_id}\\n"                    >> pipeline_provenance.yml
-    printf -- "  nextflow_run_name: ${run_name}\\n"                        >> pipeline_provenance.yml
-    printf -- "  timestamp_analysis_start: ${timestamp_analysis_start}\\n" >> pipeline_provenance.yml
+    printf -- "- pipeline_name: ${pipeline_name}"
+    printf -- "  pipeline_version: ${pipeline_version}\\n"
+    printf -- "- nextflow_version: ${nextflow_version}\\n"
+    printf -- "  nextflow_session_id: ${session_id}\\n"
+    printf -- "  nextflow_run_name: ${run_name}\\n"
+    printf -- "- timestamp_analysis_start: ${timestamp_analysis_start}\\n"
+    printf -- "  user: ${user}\\n"
+    printf -- "  command_executed: ${command_line}\\n"
+    printf -- "  launch_directory: ${launch_dir}\\n"
+    printf -- "  project_directory: ${project_dir}\\n"
+    printf -- "  working_directory: ${work_dir}\\n"
+    printf -- "- git_repo: ${repo}\\n"
+    printf -- "  git_commit: ${commit_id}\\n"
+    printf -- "  git_branch: ${branch}\\n"
     """
 }
 
