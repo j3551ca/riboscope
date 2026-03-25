@@ -27,23 +27,3 @@ process pipeline_provenance {
     printf -- "  git_branch: ${branch}\\n"
     """
 }
-
-process collect_provenance {
-
-    tag { sample_id }
-    
-    executor 'local'
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}_*_provenance.yml", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(provenance_files)
-
-    output:
-    tuple val(sample_id), file("${sample_id}_*_provenance.yml")
-
-    script:
-    """
-    cat ${provenance_files} > ${sample_id}_\$(date +%Y%m%d%H%M%S)_provenance.yml
-    """
-}

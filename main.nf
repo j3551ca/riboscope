@@ -40,7 +40,6 @@ include { make_consensus }                 from './modules/amplicon_consensus.nf
 include { plot_coverage }                  from './modules/amplicon_consensus.nf'
 include { plot_amplicon_coverage }         from './modules/amplicon_consensus.nf'
 include { pipeline_provenance }            from './modules/provenance.nf'
-include { collect_provenance }             from './modules/provenance.nf'
 
 workflow {
 
@@ -284,21 +283,5 @@ workflow {
         report_results(qc_filter.out.qc_results
         .combine(aggregate_kraken2.combine(complete_gff_ch)))
     }
-/**
-    // Collect Provenance
-    // The basic idea is to build up a channel with the following structure:
-    // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
-    // At each step, we add another provenance file to the list using the << operator...
-    // ...and then concatenate them all together in the 'collect_provenance' process.
-    ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->             [it[0], [it[1]]] }
-    ch_provenance = ch_provenance.join(hash_ref.out.provenance).map{ it ->               [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(hash_fastq.out.provenance).map{ it ->             [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->                  [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(bwa_mem.out.provenance).map{ it ->                [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(trim_primer_sequences.out.provenance).map{ it ->  [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(make_consensus.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(align_consensus_to_ref.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
 
-    collect_provenance(ch_provenance)
-  */
 }
