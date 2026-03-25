@@ -4,6 +4,10 @@ nextflow.enable.dsl = 2
 
 include { hash_files as hash_ref }         from './modules/hash_files.nf'
 include { hash_files as hash_fastq }       from './modules/hash_files.nf'
+include { print_hashed_records as 
+print_hashed_ref}                          from './modules/hash_files.nf'
+include { print_hashed_records as 
+print_hashed_fastq}                        from './modules/hash_files.nf'
 include { fastp }                          from './modules/short_read_qc.nf'
 include { detect_ribo_repeats }            from './modules/short_read_qc.nf'
 include { kraken2 as kraken2_predehost }   from './modules/short_read_qc.nf'
@@ -92,8 +96,25 @@ workflow {
 	error "File containing sequences to search is required"
     }
 
-    hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
-    hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
+    hashed_ref = hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
+    hashed_fastq = hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
+
+    ch_hash_fastq = hashed_fastq.hashes
+        .flatMap { sample_id, file_type, csv ->
+            csv.splitCsv(header: false).collect { row ->
+                tuple(sample_id, file_type, row[0], row[1])
+            }
+        }
+    
+    ch_hash_ref = hashed_ref.hashes
+        .flatMap { sample_id, file_type, csv ->
+            csv.splitCsv(header: false).collect { row ->
+                tuple(sample_id, file_type, row[0], row[1])
+            }
+        }
+
+    print_hashed_fastq(ch_hash_fastq)
+    print_hashed_ref(ch_hash_ref)
     
     ch_indexed_ref = index_ref(ch_ref)
     ch_faidx_ref = faidx_ref(Channel.fromPath(params.ref))
