@@ -108,6 +108,33 @@ NC_000919.1_ribo_rpt1 4718  A G 0.09  4730,7588,37,20 example_sample  ecoli_23S 
 
 ## Output
 
+ Output  |  Description   |  Notes  |
+|:----|:-----|:-----|
+| \*_amplicon_coverage.{tsv,png} | Average depth of coverage for each amplicon in reference sequence |  none    |
+| \*_{pre,post}_dehosting_kraken2.tsv | The final formatted Kraken2 report summarizing read classification by pathogen, host, and other |  none    |
+| \*_kraken_report\_{pre,post}_dehosting.txt  | The raw Kraken2 report used as input for Bracken  |  none    |
+| \*_bracken_output\_{pre,post}_dehosting.tsv  | The taxonomic classification of reads at level specified by user  |  none    |
+| \*_consensus_masked_iupac.fasta | Consensus sequence of each sample, including masked regions below specified depth, mutations from \*.lofreq.variants.vcf filtered to include those >= minimum VAF (`--min_vaf`), and adjustable thresholds for multiallelic sites encoded by IUPAC ambiguous bases  |  none    |
+| \*_depths.tsv | Number of sequencing reads covering each position in the reference sequence |  none    |
+| \*_fastp.csv | Trimming and filtering read statistics.  |  Uses `fastp --trim_poly_g --trim_poly_x`   |
+| \*.expected.snps.vcf | Variant Call Format (VCF) file required by LoFreq to call indels   |  none    |
+| \*.lofreq.variants.vcf | Raw SNVs called above minimum depth and including indels |  none    |
+| \*.lofreq.formatted.vcf | Formatted VCF file with SNVs filtered to include those with allele frequency of at least minimum VAF |  none    |
+| \*.feature.annotated.vcf |  Final processed VCF file containing mutations >= minimum VAF and overlapping genomic features |  none    |
+| \*.mapped.primertrimmed.sorted.{bam,bai}| Sorted alignment of primer-trimmed reads to reference sequence & associated index file |  none    |
+| \*_qualimap_alignment_qc.csv | Formatted alignment quality report including breadth of coverage statistics |  none    |
+| \*_rrna_counts.csv | Number of hits for each query sequence in `--search_seqs` multifasta within forward and reverse raw sequencing read files of each sample. Used as a proxy to detect presence of same amplicons from different repeats by using query sequences unique to each amplicon |  none    |
+| \*_samtools_stats_coverage_distribution.tsv |  Distribution of alignment depth per covered reference site from `samtools stats`  |  `^COV`    |
+| \*_samtools_stats_insert_sizes.tsv | Total read pairs and their orientation (inward vs. outward) per insert fragment size  |  none    |
+| \*_samtools_stats_summary.csv | Formatted read and mapping quality report |  none    |
+| qc_summary.csv | Aggregated QC results summary for all samples in directory including QC pass/fail status | Only produced if either `--collect_outputs` or `--apply_qc` param is included |
+| collected_samtools_stats_summary.csv | Formatted read and mapping quality report for all samples in `fastq_input` dir | Only produced if either `--collect_outputs` or `--apply_qc` param is included  |
+| collected_qualimap_alignment_qc.csv | Alignment quality report including breadth of coverage statistics for all samples in run  | Only produced if either `--collect_outputs` or `--apply_qc` param is included  |
+| collected_rrna_counts.csv | Collective results of "amplicon counts"/ query sequence hits from raw reads.  See \*_rrna_counts.csv for more details |  Only produced if either `--collect_outputs` or `--apply_qc` param is included |
+| collected_lofreq.vcf | Collective mutation results for all samples in `--fastq_input` directory. Results are aggregated \*.feature.annotated.vcf files, produced by processing \*.lofreq.formatted.vcf files by `adjust_variant_coordinates.py` script.  |  Only produced if either `--collect_outputs` or `--apply_qc` param is included in command. Annotated with genomic feature(s) coordinates if `--gff` specified, else mutation coordinates remain the same (relative to reference sequence instead of genes/ features). |
+| collected_fastp.csv | Aggregated read trimming and filtering read results of all samples in input directory  |  Only produced if either `--collect_outputs` or `--apply_qc` param is active   |
+| collected_bracken.tsv | Collective  Bracken taxonomic classification of Kraken2 reported reads at specified taxonomic level (`--taxonomy_level`) for all samples *pre* and *post* dehosting |  Only produced if either `--collect_outputs` or `--apply_qc` param is included |
+| collected_kraken2_summary.tsv  | Aggregated Kraken2 classification results summarized by user specified pathogen (see [Dehosting](#dehosting) section), host and unclassified reads per sample both *before* and *after* dehosting | Only produced if either `--collect_outputs` or `--apply_qc` param is included |
 
 ## Parameters
 
