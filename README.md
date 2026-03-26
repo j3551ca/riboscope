@@ -175,8 +175,8 @@ riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, 
 |`max_qc_flags` | Maximum number of soft fail QC flags allowable before sample is failed  | no    |  5    |
 |`qc_output` | Name or prefix of output file to write QC summary to  | no    |  'qc_summary'   |
 |`html_template` | Path to html template to use while generating report  | no    |  ./assets/report_template.html    |
-|`kraken2_db` | Path to prebuilt kraken2 database (ex. standard_16gb) | no    |  none    |
-|`bracken_db` | Path to prebuilt bracken database (ex. 50, 75, 100-mers, etc) | no    |  none   |
+|`kraken2_db` | Path to prebuilt kraken2 database (ex. standard_16gb) | yes    |  none    |
+|`bracken_db` | Path to prebuilt bracken database (ex. 50, 75, 100-mers, etc) | yes    |  none   |
 |`taxonomy_level` | Taxonomy level used by Bracken (ex. subspecies = S1) | no    |  S1    |
 |`read_length` | Length of sequencing reads used by Bracken | no    |  150    |
 |`host_name` | Name of host used to parse Kraken2 results for taxonomic classification section of report and QC filtering (max_host) | no    |  Homo sapiens   |
