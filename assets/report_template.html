@@ -36,13 +36,12 @@
           top: 20px;
           right: 20px;
           z-index: 1000;
-          pointer-events: none;       
         }
 
         .toc-container {
-          pointer-events: auto;       
+          display: inline-block;
           font-size: 13px;
-          text-align: right; 
+          text-align: right;
         }
 
         .toc-toggle {
@@ -53,11 +52,12 @@
           padding: 9px 14px;
           cursor: pointer;
           font-size: 1.0em;
-          transition: background 0.2s;
+          transition: background 0.2s, transform 0.2s;
         }
         .toc-toggle:hover { 
             background: #254b80; 
-            transform: translateY(-1px);}
+            transform: translateY(-1px);
+        }
 
         .toc {
           background: #e8effa;
@@ -69,11 +69,14 @@
           opacity: 0;
           transform: translateY(-5px);
           transition: all 0.25s ease;
+          pointer-events: none; 
         }
 
-        .toc-container:hover .toc {
+        .toc-toggle:hover + .toc,
+        .toc:hover {
           opacity: 1;
           transform: translateY(0);
+          pointer-events: auto;
         }
 
         .toc h3 {
@@ -109,19 +112,18 @@
         @media (max-width:700px){
           .toc-wrapper { display:none; }
         }
+
         p, h1, h2, h3, h4, h5, h6, ul, ol {
-        max-width: 1000px;
-        line-height: 1.6;
-        text-align: left;
-        margin-bottom: 1.5em;   /* space between sections */
+          max-width: 1000px;
+          line-height: 1.6;
+          text-align: left;
+          margin-bottom: 1.5em;
         }
 
-        /* plots and tables full width with spacing */
         .plot, .pretty-table {
-        max-width: none !important;
-        margin: 1.5em 0;
+          max-width: none !important;
+          margin: 1.5em 0;
         }
-        
     </style>
 </head>
 <body>
@@ -141,6 +143,7 @@
         </div>
       </div>
     </div>
+
     <h1>{{ heading }}</h1>
     <p>Generated on {{ date }}</p>
 
@@ -161,9 +164,15 @@
     </div>
 
     <h2 id="snvs">SNVs Detected in rRNA of Treponema Pallidum</h2>
-    <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering oevr each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
-        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization.
+    <p>SNVs in each sample are listed on the x-axis, allele frequency on the y-axis, size depicts the number of samples that carry this same mutation, and color represents which of the ribosomal repeats (copies) the mutation is found in for a given sample. Hovering over each point displays this information in more detail. It is possible to zoom into the plot for further exploration.
+        Samples without any successfully sequenced amplicons or pools (genes) that had neither repeat (copy) passing QC were removed from visualization. Mutations are displayed relative to position in each genomic feature. The same mutation may appear in multiple features when there are overlapping features. The original position along the reference sequence is found under "snv" when hovering over a mutation,
+         while "feature_snv" shows the position of the mutation relative to the start of a specific feature from a given organism. The genomic features as well as the position are controlled by the user via GFF3 file. For example, a mutation may be reported relative to the start of a <em>Treponema pallidum</em> 23S rRNA gene or relative to an <em>Escherichia coli</em> 23S rRNA gene by simply aligning this gene to the reference and specifying the start and end positions in the GFF3 file. 
+        Subplots correspond to genomic features displayed along reference sequence below. Genomic features in purple are provided by user and those in pink are computed and labeled as "intergenic_n". 
     </p>
+
+    <div class="plot">
+      {{ feature_plot | safe }}
+    </div>
 
     <div class="plot">
         {{ snp_plot | safe }}
@@ -189,39 +198,21 @@
     <p>Any sample that was flagged during QC is displayed below. Samples with at least {{ n_flags }} flags failed QC or those that did not meet bare minimum criteria (ie. "hard fail rules" such as at least 1 successfully sequenced amplicon).</p>
     
     {{ flags_table | safe }}
+
     <script>
-        // smooth scroll + instant highlight
-        document.querySelectorAll('.toc a').forEach(link => {
-          link.addEventListener('click', e => {
-            e.preventDefault();
-            const target = document.querySelector(link.getAttribute('href'));
-            if (!target) return;
-        
-            // smooth scroll to the section
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-            // update the URL hash (so browser focus jumps correctly)
-            history.replaceState(null, '', link.getAttribute('href'));
-        
-            // highlight instantly
-            document.querySelectorAll('.toc a').forEach(a => a.classList.remove('active'));
-            link.classList.add('active');
-          });
-        });
-        
-        // auto-highlight while scrolling
-        const sections = document.querySelectorAll('[id]');
-        const navLinks = document.querySelectorAll('.toc a');
-        const observer = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              navLinks.forEach(a => a.classList.remove('active'));
-              const active = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
-              if (active) active.classList.add('active');
-            }
-          });
-        },{ threshold: 0.3 });
-        sections.forEach(sec => observer.observe(sec));
-        </script>
+document.querySelectorAll('.toc a').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.replaceState(null, '', link.getAttribute('href'));
+
+    document.querySelectorAll('.toc a').forEach(a => a.classList.remove('active'));
+    link.classList.add('active');
+  });
+});
+</script>
 </body>
 </html>

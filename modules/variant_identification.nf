@@ -183,63 +183,27 @@ process filter_lofreq {
     """
 }
 
-process map_contigs {
+process adjust_variant_coordinates {
 
     tag { sample_id }
 
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.feature.annotated.vcf", mode: 'copy'
 
     input:
-    tuple val(sample_id), path(contigs), path(ref)
+    tuple val(sample_id), path(vcf), path(gff), path(faidx_ref), path(faidx_fai)
 
     output:
-    tuple val(sample_id), path("${sample_id}.contigs.sorted{.bam,.bai}")
+    tuple val(sample_id), path("${sample_id}.feature.annotated.vcf"), emit: feature_coord_vcf
+    path("complete.gff"), emit: complete_gff, optional: true
+
 
     script:
     """
-    minimap2 \
-    -a -x asm5 \
-    ${ref} \
-    contigs_stage_c.fasta \
-    > mapped_contigs.sam
-
-    samtools sort -o ${sample_id}.contigs.sorted.bam mapped_contigs.sam
-    samtools index ${sample_id}.contigs.sorted.bam
-
-    #extract contigs overlap in 16S region
-    samtools view -L 16S_region.bed TR13116_minimap_contigs.bam \
-    | cut -f1 \
-    | sort -u \
-    | seqkit grep -f - contigs_stage_c.fasta \
-    > 16S_contigs.fasta
-
-
-    """
-}
-
-
-process call_variants {
-
-    tag { sample_id }
-
-    publishDir "${params.outdir}/${sample_id}", pattern: "${sample_id}.variants.tsv", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(alignment), path(ref)
-
-    output:
-    tuple val(sample_id), path("${sample_id}.variants.tsv")
-
-    script:
-    """
-    samtools faidx ${ref}
-
-    samtools mpileup -aa -A -d ${params.max_depth} -B -Q 0 --reference ${ref} ${alignment[0]} \
-	| ivar variants \
-	-r ${ref} \
-	-m ${params.min_depth}  \
-	-q ${params.min_qual_for_variant_calling} \
-	-t ${params.ambiguous_allele_freq_threshold} \
-	-p ${sample_id}.variants
+    adjust_variant_coordinates.py \
+    --input_gff ${gff} \
+    --output_gff "complete.gff" \
+    --fai ${faidx_fai} \
+    --input_vcf ${vcf} \
+    --output_vcf ${sample_id}.feature.annotated.vcf
     """
 }

@@ -46,7 +46,7 @@ process report_results {
     publishDir "${params.outdir}", pattern: "*_report.html", mode: "copy"
 
     input:
-    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons), path(kraken2_tsv)
+    tuple path(qc_summary), path(annotated_vcf), path(amplicon_counts), path(failed_amplicons), path(kraken2_tsv), path(complete_gff)
 
     output:
     path("*.html")
@@ -61,8 +61,11 @@ process report_results {
     --failed_amplicons ${failed_amplicons} \
     --html_template ${params.html_template} \
     --ref ${params.ref} \
+    --gff ${complete_gff} \
     --n_qc_flag ${params.max_qc_flags} \
-    --min_med_amp_count ${params.min_amplicon_count}
+    --min_med_amp_count ${params.min_amplicon_count} \
+    --reporting_vaf ${params.reporting_vaf} \
+    --reporting_sample_perc ${params.reporting_sample_perc}
 
     #- high level summary: # passed samples, # failed, new mutations not seen before, presence/ absence mutations in known sites (23S)
     """

@@ -4,6 +4,10 @@ nextflow.enable.dsl = 2
 
 include { hash_files as hash_ref }         from './modules/hash_files.nf'
 include { hash_files as hash_fastq }       from './modules/hash_files.nf'
+include { print_hashed_records as 
+print_hashed_ref}                          from './modules/hash_files.nf'
+include { print_hashed_records as 
+print_hashed_fastq}                        from './modules/hash_files.nf'
 include { fastp }                          from './modules/short_read_qc.nf'
 include { detect_ribo_repeats }            from './modules/short_read_qc.nf'
 include { kraken2 as kraken2_predehost }   from './modules/short_read_qc.nf'
@@ -15,6 +19,7 @@ kraken2_summary_predehost}                 from './modules/short_read_qc.nf'
 include { summarize_kraken2 as 
 kraken2_summary_postdehost}                from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
+include { faidx_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
 include { trim_primer_sequences }          from './modules/amplicon_consensus.nf'
 include { qualimap_bamqc }                 from './modules/amplicon_consensus.nf'
@@ -28,22 +33,31 @@ include { recalibrate_bq }                 from './modules/variant_identificatio
 include { lofreq_indel }                   from './modules/variant_identification.nf'
 include { lofreq_call }                    from './modules/variant_identification.nf'
 include { filter_lofreq }                  from './modules/variant_identification.nf'
+include { adjust_variant_coordinates }     from './modules/variant_identification.nf'
 include { qc_filter }                      from  './modules/sample_qc.nf'
 include { report_results }                 from  './modules/sample_qc.nf'
 include { make_consensus }                 from './modules/amplicon_consensus.nf'
 include { plot_coverage }                  from './modules/amplicon_consensus.nf'
 include { plot_amplicon_coverage }         from './modules/amplicon_consensus.nf'
 include { pipeline_provenance }            from './modules/provenance.nf'
-include { collect_provenance }             from './modules/provenance.nf'
 
 workflow {
 
     ch_workflow_metadata = Channel.value([
-	workflow.sessionId,
+	nextflow.version,
+    workflow.sessionId,
 	workflow.runName,
 	workflow.manifest.name,
 	workflow.manifest.version,
+    workflow.userName,
 	workflow.start,
+    workflow.commandLine,
+    workflow.launchDir,
+    workflow.projectDir,
+    workflow.workDir,
+    workflow.repository,
+    workflow.commitId,
+    workflow.revision,
     ])
 
     ch_pipeline_provenance = pipeline_provenance(ch_workflow_metadata)
@@ -73,19 +87,49 @@ workflow {
 	error "BED file is required"
     }
 
+    ch_gff = Channel.fromPath(params.gff)
+
     if (params.search_seqs != 'NO_FILE') {
 	ch_search_seqs = Channel.fromPath(params.search_seqs)
     } else {
 	error "File containing sequences to search is required"
     }
 
-    hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
-    hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
+    if (params.kraken2_db != 'NO_FILE') {
+    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
+    } else {
+    error "Path to directory containing Kraken2 database required. Specify with --kraken2_db"
+    }
+
+    if (params.bracken_db != 'NO_FILE') {
+    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
+    } else {
+    error "Path to directory containing Bracken database required. Specify with --bracken_db"
+    }
+
+    hashed_ref = hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
+    hashed_fastq = hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
+
+    ch_hash_fastq = hashed_fastq.hashes
+        .flatMap { sample_id, file_type, csv ->
+            csv.splitCsv(header: false).collect { row ->
+                tuple(sample_id, file_type, row[0], row[1])
+            }
+        }
+    
+    ch_hash_ref = hashed_ref.hashes
+        .flatMap { sample_id, file_type, csv ->
+            csv.splitCsv(header: false).collect { row ->
+                tuple(sample_id, file_type, row[0], row[1])
+            }
+        }
+
+    print_hashed_fastq(ch_hash_fastq)
+    print_hashed_ref(ch_hash_ref)
     
     ch_indexed_ref = index_ref(ch_ref)
+    ch_faidx_ref = faidx_ref(Channel.fromPath(params.ref))
     ch_min_vaf = Channel.of(params.min_vaf)
-    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
-    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
     ch_read_length = Channel.of(params.read_length)
     ch_taxonomy_level = Channel.of(params.taxonomy_level)
     ch_predehost = Channel.of('pre_dehosting')
@@ -94,15 +138,6 @@ workflow {
     //ch_host_name = Channel.of(params.host_name)
     //ch_pathogen_name = Channel.of(params.pathogen_name)
 
-    kraken2_predehost(ch_fastq.combine(ch_kraken2_db.combine(ch_predehost)))
-
-    kraken2_summary_predehost(kraken2_predehost.out.kraken2_report.combine(ch_predehost))
-    
-    bracken_predehost(kraken2_predehost.out.kraken2_report
-    .combine(ch_bracken_db
-    .combine(ch_read_length
-    .combine(ch_taxonomy_level
-    .combine(ch_predehost)))))
 
     fastp(ch_fastq)
     detect_ribo_repeats(ch_fastq.combine(ch_search_seqs))
@@ -112,6 +147,16 @@ workflow {
     } else {
 	ch_reads_to_align = ch_fastq
     }
+
+    kraken2_predehost(ch_reads_to_align.combine(ch_kraken2_db.combine(ch_predehost)))
+
+    kraken2_summary_predehost(kraken2_predehost.out.kraken2_report.combine(ch_predehost))
+    
+    bracken_predehost(kraken2_predehost.out.kraken2_report
+    .combine(ch_bracken_db
+    .combine(ch_read_length
+    .combine(ch_taxonomy_level
+    .combine(ch_predehost)))))
 
     bwa_mem(ch_reads_to_align.join(ch_indexed_ref))
 
@@ -141,7 +186,7 @@ workflow {
 
     plot_amplicon_coverage(ch_amplicon_depths)
 
-    samtools_mpileup(ch_primer_trimmed_alignment.join(ch_ref))
+    samtools_mpileup(ch_primer_trimmed_alignment.combine(ch_faidx_ref)) 
 
     ch_per_base_depths = samtools_mpileup.out.depths
 
@@ -160,6 +205,10 @@ workflow {
     lofreq_call(lofreq_indel.out.indel_alignment.join(ch_ref_dict.combine(ch_bed)))
 
     filter_lofreq(lofreq_call.out.minor_alleles)
+
+    adjust_variant_coordinates(filter_lofreq.out.formatted_vcf.combine(ch_gff.combine(ch_faidx_ref)))
+    
+    vcf_ch = adjust_variant_coordinates.out.feature_coord_vcf
 
     make_consensus(lofreq_call.out.minor_alleles.join(ch_ref.join(samtools_mpileup.out.depths.combine(ch_min_vaf))))
 
@@ -193,7 +242,15 @@ workflow {
 	    storeDir: "${params.outdir}"
 	)
 
-    aggregate_snps = filter_lofreq.out.formatted_vcf.map{ it -> it[1] }.collectFile(
+    //if liftover implemented, collect lifted over VCFs vcf_liftover.out.lifted_vcf
+    // if (params.use_liftover) {
+    //     vcf_ch = vcf_liftover.out.lifted_vcf
+    // } else {
+    //     vcf_ch = filter_lofreq.out.formatted_vcf
+    // }
+    // adjust variant coordinates according to features provided in GFF - if NO_FILE, coords remain the same
+
+    aggregate_snps = vcf_ch.map{ it -> it[1] }.collectFile(
 	    keepHeader: true,
 	    sort: { it.text },
 	    name: "${params.collected_outputs_prefix}_lofreq.vcf",
@@ -223,6 +280,8 @@ workflow {
 
     if (params.apply_qc) {
         amplicon_bed_file = amplicon_coverage.out.amplicon_bed
+        complete_gff_ch = adjust_variant_coordinates.out.complete_gff
+        
         qc_filter(aggregate_fastp
         .combine(aggregate_bam
         .combine(aggregate_samtools
@@ -230,24 +289,9 @@ workflow {
         .combine(aggregate_snps
         .combine(amplicon_bed_file
         .combine(aggregate_kraken2)))))))
-        report_results(qc_filter.out.qc_results
-        .combine(aggregate_kraken2))
-    }
-/**
-    // Collect Provenance
-    // The basic idea is to build up a channel with the following structure:
-    // [sample_id, [provenance_file_1.yml, provenance_file_2.yml, provenance_file_3.yml...]]
-    // At each step, we add another provenance file to the list using the << operator...
-    // ...and then concatenate them all together in the 'collect_provenance' process.
-    ch_provenance = ch_provenance.combine(ch_pipeline_provenance).map{ it ->             [it[0], [it[1]]] }
-    ch_provenance = ch_provenance.join(hash_ref.out.provenance).map{ it ->               [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(hash_fastq.out.provenance).map{ it ->             [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(fastp.out.provenance).map{ it ->                  [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(bwa_mem.out.provenance).map{ it ->                [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(trim_primer_sequences.out.provenance).map{ it ->  [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(make_consensus.out.provenance).map{ it ->         [it[0], it[1] << it[2]] }
-    ch_provenance = ch_provenance.join(align_consensus_to_ref.out.provenance).map{ it -> [it[0], it[1] << it[2]] }
 
-    collect_provenance(ch_provenance)
-  */
+        report_results(qc_filter.out.qc_results
+        .combine(aggregate_kraken2.combine(complete_gff_ch)))
+    }
+
 }
