@@ -97,6 +97,10 @@ Users may optionally adjust reported positions of mutations according to where t
 CHROM POS REF ALT AF  DP4 SAMPLE_ID FEATURE_NAME  FEATURE_STRAND  FEATURE_POS
 NC_000919.1_ribo_rpt1 4718  A G 0.09  4730,7588,37,20 example_sample  ecoli_23S + 2100
 
+### Provenance
+
+riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, outputs, command line ran, and process name of each task is recorded, along with workflow information such as pipeline version, commit hash, analysis start time, Nextflow session ID. Two processes exist for the sake of printing relevant provenance information (`pipeline_provenance` & `print_hashed_records`) like sha256 hashes of input raw sequencing read (FASTQ) files, as an alternative to producing and collating yml files within each process. This approach was taken to simplify code required and ensure script block is recorded dynamically. One caveat of this approach compared to aggregating provenance yaml files is that information is not grouped by sample, though this may be resolved through downstream parsing of provenance.json. 
+
 ## Input
 
 | Input  | Parameter   |  Description   |  Notes  |
