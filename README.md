@@ -146,6 +146,7 @@ riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, 
 |:----|:-----|:-----|:-----|
 |`fastq_input` | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).   | yes    |  none    |
 |`outdir` | Absolute path to directory to write results to. | no    |  ./results    |
+|`apply_qc` | Activate QC filtering of samples and generation of html results report  | no    |  off    |
 |`ref` | Reference genome used to align reads to during guided assembly  | yes    |  none    |
 |`bed` | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1)   | yes    |  none    |
 |`search_seqs` | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.   | yes    |  none    |
@@ -155,7 +156,6 @@ riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, 
 |`collect_outputs` | Summarize outputs of multiple samples into one. | no    |  off    |
 |`collected_outputs_prefix` | Prefix to name multi-sample summary files with. | no    |  'collected'    |
 |`min_vaf` | Minimum allowable variant allele frequency (VAF) to filter. This porportion is applied to lofreq VCF and resulting \*lofreq.formatted.vcf contains only SNPs present above this VAF. | no    |  0    |
-|`apply_qc` | Activate QC filtering of samples and generation of html results report  | no    |  off    |
 |`gff` | Path to the [GFF3](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/) file containing features user would like to identify mutations in. If provided, mutations are reported according to feature coordinates. If no GFF3 provided, mutations are reported as default coordinates in reference sequence. The reported features and mutation positions are dictated by the user in the GFF3 file. For example, a mutation may be reported relative to the start of a <em>Treponema pallidum</em> 23S rRNA gene or relative to an <em>Escherichia coli</em> 23S rRNA gene by simply aligning this gene to the reference and specifying the start and end positions in the GFF3 file.   | no    |  none    |
 |`min_amplicon_count` | Minimum median query sequence counts to consider an amplicon as present  | no    |  300    |
 |`min_pathogen` | Minimum percentage of reads classified as target pathogen in a sample | no    |  85.0    |
