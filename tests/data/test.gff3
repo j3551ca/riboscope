@@ -1,0 +1,7 @@
+##gff-version 3
+NC_000919.1_ribo_rpt1	geneious	rRNA	1	50	0	+	.	Name=start_gene;product=16S ribosomal RNA
+NC_000919.1_ribo_rpt1	geneious	rRNA	770	2333	0	+	.	Name=16S_rRNA;product=16S ribosomal RNA
+NC_000919.1_ribo_rpt1	geneious	rRNA	2613	5615	0	+	.	Name=23S_rRNA;product=23S ribosomal RNA
+NC_000919.1_ribo_rpt1	geneious	gene	2700	5570	9.1e-12	-	.	NoKey
+NC_000919.1_ribo_rpt1	geneious	rRNA	5614	5729	9.1e-12	+	.	Name=5S_rRNA;product=5S ribosomal RNA
+NC_000919.1_ribo_rpt1	geneious	gene	5600	5684	9.1e-12	-	.	product=test CDS
