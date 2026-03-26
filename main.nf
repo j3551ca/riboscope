@@ -95,6 +95,18 @@ workflow {
 	error "File containing sequences to search is required"
     }
 
+    if (params.kraken2_db != 'NO_FILE') {
+    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
+    } else {
+    error "Path to directory containing Kraken2 database required. Specify with --kraken2_db"
+    }
+
+    if (params.bracken_db != 'NO_FILE') {
+    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
+    } else {
+    error "Path to directory containing Bracken database required. Specify with --bracken_db"
+    }
+
     hashed_ref = hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
     hashed_fastq = hash_fastq(ch_fastq.map{ it -> [it[0], [it[1], it[2]]] }.combine(Channel.of("fastq-input")))
 
@@ -118,8 +130,6 @@ workflow {
     ch_indexed_ref = index_ref(ch_ref)
     ch_faidx_ref = faidx_ref(Channel.fromPath(params.ref))
     ch_min_vaf = Channel.of(params.min_vaf)
-    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
-    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
     ch_read_length = Channel.of(params.read_length)
     ch_taxonomy_level = Channel.of(params.taxonomy_level)
     ch_predehost = Channel.of('pre_dehosting')
@@ -232,7 +242,7 @@ workflow {
 	    storeDir: "${params.outdir}"
 	)
 
-    //TODO: if liftover implemented, collect lifted over VCFs vcf_liftover.out.lifted_vcf
+    //if liftover implemented, collect lifted over VCFs vcf_liftover.out.lifted_vcf
     // if (params.use_liftover) {
     //     vcf_ch = vcf_liftover.out.lifted_vcf
     // } else {
