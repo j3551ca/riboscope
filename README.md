@@ -103,34 +103,38 @@ riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, 
 
 ## Input
 
-| Input  | Parameter   |  Description   |  Notes  |
+| Input  | Parameter   |  Description   |  Mandatory  |
 |:----|:-----|:-----|:-----|
-| Paired-end sequencing reads |  `fastq_input`  | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).    |  none    |
-|Reference genome | `ref` |  Reference genome used to align reads to during guided assembly    |  none    |
-|BED file	 | `bed`  | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1). Note that rows must be repeated for each gene copy (ex. 3 gene copies = same row 3 times)    |  none    |
-|MultiFASTA of query sequences | `search_seqs`  | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.     |  none    |
+| Paired-end sequencing reads |  `fastq_input`  | Absolute path to directory containing raw FASTQ reads to be analyzed. Riboscope accepts gzip compressed or uncompressed files (*.fastq.gz, *.fq.gz, *.fastq, *.fq).    |  true    |
+|Reference genome | `ref` |  Reference genome used to align reads to during guided assembly    |  true    |
+|BED file	 | `bed`  | Primer scheme BED file in the [6 column format](https://genome.ucsc.edu/FAQ/FAQformat.html#format1). Note that rows must be repeated for each gene copy (ex. 3 gene copies = same row 3 times)    |  true    |
+|MultiFASTA of query sequences | `search_seqs`  | MultiFASTA file contain short sequences to query raw reads. Used to verify presence of expected gene copies.     |  true    |
+|Bracken database | `bracken_db`  | Path to prebuilt bracken database (ex. 50, 75, 100-mers, etc) |  true    |
+|Kraken2 database | `kraken2_db`  | Path to prebuilt kraken2 database (ex. standard_16gb) |  true    |
+|GFF3 file| `gff`  | Path to the [GFF3](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/file-formats/annotation-files/about-ncbi-gff3/) file containing features user would like to identify mutations in. If provided, mutations are reported according to feature coordinates. If no GFF3 provided, mutations are reported as default coordinates in reference sequence |  false    |
+
 
 ## Output
 
  Output  |  Description   |  Notes  |
 |:----|:-----|:-----|
-| \*_amplicon_coverage.{tsv,png} | Average depth of coverage for each amplicon in reference sequence |  none    |
-| \*_{pre,post}_dehosting_kraken2.tsv | The final formatted Kraken2 report summarizing read classification by pathogen, host, and other |  none    |
-| \*_kraken_report\_{pre,post}_dehosting.txt  | The raw Kraken2 report used as input for Bracken  |  none    |
-| \*_bracken_output\_{pre,post}_dehosting.tsv  | The taxonomic classification of reads at level specified by user  |  none    |
-| \*_consensus_masked_iupac.fasta | Consensus sequence of each sample, including masked regions below specified depth, mutations from \*.lofreq.variants.vcf filtered to include those >= minimum VAF (`--min_vaf`), and adjustable thresholds for multiallelic sites encoded by IUPAC ambiguous bases  |  none    |
+| \*_amplicon_coverage.{tsv,png} | Average depth of coverage for each amplicon in reference sequence |  All output files listed with wildcard \* are produced per sample in separate directories    |
+| \*_{pre,post}_dehosting_kraken2.tsv | The final formatted Kraken2 report summarizing read classification by pathogen, host, and other |  -    |
+| \*_kraken_report\_{pre,post}_dehosting.txt  | The raw Kraken2 report used as input for Bracken  |  -    |
+| \*_bracken_output\_{pre,post}_dehosting.tsv  | The taxonomic classification of reads at level specified by user  |  -    |
+| \*_consensus_masked_iupac.fasta | Consensus sequence of each sample, including masked regions below specified depth, mutations from \*.lofreq.variants.vcf filtered to include those >= minimum VAF (`--min_vaf`), and adjustable thresholds for multiallelic sites encoded by IUPAC ambiguous bases  |  `--min_iupac`: if vaf < min_iupac = ref in consensus while sites with alt alleles between min_iupac & max_iupac = mixed. `--max_iupac`: vaf that an alt is called in consensus. |
 | \*_depths.tsv | Number of sequencing reads covering each position in the reference sequence |  none    |
 | \*_fastp.csv | Trimming and filtering read statistics.  |  Uses `fastp --trim_poly_g --trim_poly_x`   |
-| \*.expected.snps.vcf | Variant Call Format (VCF) file required by LoFreq to call indels   |  none    |
-| \*.lofreq.variants.vcf | Raw SNVs called above minimum depth and including indels |  none    |
-| \*.lofreq.formatted.vcf | Formatted VCF file with SNVs filtered to include those with allele frequency of at least minimum VAF |  none    |
-| \*.feature.annotated.vcf |  Final processed VCF file containing mutations >= minimum VAF and overlapping genomic features |  none    |
-| \*.mapped.primertrimmed.sorted.{bam,bai}| Sorted alignment of primer-trimmed reads to reference sequence & associated index file |  none    |
-| \*_qualimap_alignment_qc.csv | Formatted alignment quality report including breadth of coverage statistics |  none    |
-| \*_rrna_counts.csv | Number of hits for each query sequence in `--search_seqs` multifasta within forward and reverse raw sequencing read files of each sample. Used as a proxy to detect presence of same amplicons from different repeats by using query sequences unique to each amplicon |  none    |
+| \*.expected.snps.vcf | Variant Call Format (VCF) file required by LoFreq to call indels   |  SNVs present at 1% used for recalibrating BQ according to GATK best practices, recommended by LoFreq for indel calling. See Jago et al. (2020) reference below.  |
+| \*.lofreq.variants.vcf | Raw SNVs called above minimum depth and including indels |  pre-filtering 'raw' SNVs |
+| \*.lofreq.formatted.vcf | Formatted VCF file with SNVs filtered to include those with allele frequency of at least minimum VAF |  tsv file filtered by `--min_vaf`   |
+| \*.feature.annotated.vcf |  Final processed VCF file containing mutations >= minimum VAF and overlapping genomic features |  Controlled by `--gff` genomic features. See [Mutation coordinate system](#reporting-mutations-according-to-position-in-genomic-features) section |
+| \*.mapped.primertrimmed.sorted.{bam,bai}| Sorted alignment of primer-trimmed reads to reference sequence & associated index file |  -    |
+| \*_qualimap_alignment_qc.csv | Formatted alignment quality report including breadth of coverage statistics |  -    |
+| \*_rrna_counts.csv | Number of hits for each query sequence in `--search_seqs` multifasta within forward and reverse raw sequencing read files of each sample. Used as a proxy to detect presence of same amplicons from different repeats by using query sequences unique to each amplicon |  -    |
 | \*_samtools_stats_coverage_distribution.tsv |  Distribution of alignment depth per covered reference site from `samtools stats`  |  `^COV`    |
-| \*_samtools_stats_insert_sizes.tsv | Total read pairs and their orientation (inward vs. outward) per insert fragment size  |  none    |
-| \*_samtools_stats_summary.csv | Formatted read and mapping quality report |  none    |
+| \*_samtools_stats_insert_sizes.tsv | Total read pairs and their orientation (inward vs. outward) per insert fragment size  |  -    |
+| \*_samtools_stats_summary.csv | Formatted read and mapping quality report |  -    |
 | qc_summary.csv | Aggregated QC results summary for all samples in directory including QC pass/fail status | Only produced if either `--collect_outputs` or `--apply_qc` param is included |
 | collected_samtools_stats_summary.csv | Formatted read and mapping quality report for all samples in `fastq_input` dir | Only produced if either `--collect_outputs` or `--apply_qc` param is included  |
 | collected_qualimap_alignment_qc.csv | Alignment quality report including breadth of coverage statistics for all samples in run  | Only produced if either `--collect_outputs` or `--apply_qc` param is included  |
@@ -141,6 +145,9 @@ riboscope uses v1.3.0 of the nf-prov plugin with the legacy format. The inputs, 
 | collected_kraken2_summary.tsv  | Aggregated Kraken2 classification results summarized by user specified pathogen (see [Dehosting](#dehosting) section), host and unclassified reads per sample both *before* and *after* dehosting | Only produced if either `--collect_outputs` or `--apply_qc` param is included |
 
 ## Parameters
+
+ 
+> Note: Pipeline parameters listed below are preceded by a double-dash -- (ex. `--fastq_input`) while Nextflow related parameters use single dashes (ex. `-profile`)
 
 | Parameter  | Description   |  Required   |  Default  |
 |:----|:-----|:-----|:-----|
