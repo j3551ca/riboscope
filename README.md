@@ -18,6 +18,7 @@ nextflow run BCCDC-PHL/riboscope \
   --apply_qc \
   --outdir /path/to/output_dir
 ```
+
 ## Table of Contents
   [Quick-Start](#quick-start)<br>
   [Workflow](#workflow)<br>

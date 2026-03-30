@@ -18,6 +18,7 @@ include { summarize_kraken2 as
 kraken2_summary_predehost}                 from './modules/short_read_qc.nf'
 include { summarize_kraken2 as 
 kraken2_summary_postdehost}                from './modules/short_read_qc.nf'
+include { unpack_test_kraken_db }          from './modules/short_read_qc.nf'
 include { index_ref }                      from './modules/amplicon_consensus.nf'
 include { faidx_ref }                      from './modules/amplicon_consensus.nf'
 include { bwa_mem }                        from './modules/amplicon_consensus.nf'
@@ -43,6 +44,8 @@ include { pipeline_provenance }            from './modules/provenance.nf'
 
 workflow {
 
+    main:
+
     ch_workflow_metadata = Channel.value([
 	nextflow.version,
     workflow.sessionId,
@@ -63,48 +66,53 @@ workflow {
     ch_pipeline_provenance = pipeline_provenance(ch_workflow_metadata)
 
     if (params.samplesheet_input != 'NO_FILE') {
-	ch_fastq = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['R1'], it['R2']] }.filter{ it -> it[1] != null || it[2] != null }
-	ch_ref = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['REF']] }
+	    ch_fastq = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['R1'], it['R2']] }.filter{ it -> it[1] != null || it[2] != null }
+	    ch_ref = Channel.fromPath(params.samplesheet_input).splitCsv(header: true).map{ it -> [it['ID'], it['REF']] }
     } else {
-	ch_fastq = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
+	    ch_fastq = Channel.fromFilePairs( params.fastq_search_path, flat: true ).map{ it -> [it[0].split('_')[0], it[1], it[2]] }.unique{ it -> it[0] }
+        if (params.ref != 'NO_FILE') {
+              ch_ref = ch_fastq.map{ it -> it[0] }.combine(Channel.fromPath(params.ref))
+          } else {
+              error "Reference file is required"
+          }
     }
 
-
-    main:
     ch_sample_ids = ch_fastq.map{ it -> it[0] }
 
     ch_provenance = ch_sample_ids
 
-    if (params.ref != 'NO_FILE') {
-	ch_ref = ch_sample_ids.combine(Channel.fromPath(params.ref))
-    } else {
-	error "Reference file is required"
-    }
-
     if (params.bed != 'NO_FILE') {
-	ch_bed = Channel.fromPath(params.bed)
+	    ch_bed = Channel.fromPath(params.bed)
     } else {
-	error "BED file is required"
+	    error "BED file is required"
     }
 
     ch_gff = Channel.fromPath(params.gff)
 
     if (params.search_seqs != 'NO_FILE') {
-	ch_search_seqs = Channel.fromPath(params.search_seqs)
+	    ch_search_seqs = Channel.fromPath(params.search_seqs)
     } else {
-	error "File containing sequences to search is required"
+	    error "File containing sequences to search is required"
     }
 
-    if (params.kraken2_db != 'NO_FILE') {
-    ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
+    if (workflow.profile.contains('test')){
+
+    ch_kraken2_db = unpack_test_kraken_db(params.kraken2_db_url)
+    ch_bracken_db = ch_kraken2_db  
+
     } else {
-    error "Path to directory containing Kraken2 database required. Specify with --kraken2_db"
+
+    if (params.kraken2_db != 'NO_FILE') {
+        ch_kraken2_db = Channel.fromPath( "${params.kraken2_db}", type: 'dir')
+    } else {
+        error "Path to directory containing Kraken2 database required. Specify with --kraken2_db"
     }
 
     if (params.bracken_db != 'NO_FILE') {
-    ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
+        ch_bracken_db = Channel.fromPath( "${params.bracken_db}", type: 'dir')
     } else {
-    error "Path to directory containing Bracken database required. Specify with --bracken_db"
+        error "Path to directory containing Bracken database required. Specify with --bracken_db"
+    }
     }
 
     hashed_ref = hash_ref(ch_ref.combine(Channel.of("ref-fasta")))
