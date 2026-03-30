@@ -1,4 +1,4 @@
-name: amplicon-consensus-plot-coverage
+name: riboscope_py
 channels:
   - conda-forge
   - bioconda
