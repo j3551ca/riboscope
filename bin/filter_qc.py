@@ -26,7 +26,7 @@ def ingest_seq_results(fastp_csv, bam_csv, samtools_stats_csv):
 
     return(merge_df)
 
-def syphilis_amplicons(amplicon_counts_csv):
+def syphilis_amplicons(amplicon_counts_csv, groups):
     """
     Calculate median and min reads per group of queried sequences
     that represent each Treponema pallidum amplicon. Output df for merging
@@ -34,7 +34,7 @@ def syphilis_amplicons(amplicon_counts_csv):
     """
     df = pd.read_csv(amplicon_counts_csv, header = 0)
     amplicon_summary = pd.DataFrame()
-    groups = ["rpt1_pool1_", "rpt1_pool2_", "rpt2_pool1_", "rpt2_pool2_"]
+    #groups = ["rpt1_pool1_", "rpt1_pool2_", "rpt2_pool1_", "rpt2_pool2_"]
 
     for prefix in groups:
         cols = [c for c in df.columns if c.startswith(prefix)]
@@ -183,7 +183,12 @@ def filter_vcf(vcf_file, failed_samples, failed_amplicons, amplicon_bed):
 
 def main(args):
     read_aln_df = ingest_seq_results(args.fastp_qc, args.bam_qc, args.samtools_stats)
-    amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts)
+
+    amplicon_groups = [g.strip() for g in args.groups.split(",") if g.strip()]
+    if not amplicon_groups:
+        raise ValueError("No valid groups were provided via --groups")
+    
+    amplicon_qc, amplicon_df = syphilis_amplicons(args.amplicon_counts, amplicon_groups)
     kraken_df = pd.read_csv(args.kraken2_tsv, sep = "\t", header=0)
     qc_df, failed_samples, failed_amplicons = sample_qc_filter(read_aln_df, amplicon_qc, kraken_df, args.max_host, args.min_pathogen, args.min_q20, args.min_q30, args.min_bq, 
                                                                args.min_depth, args.min_map_pair, args.min_map, args.min_pct_map, 
@@ -222,6 +227,7 @@ if __name__ == '__main__':
     parser.add_argument("--min_pos_count", type=int, required=True, help="Minimum allowable number of positive control query sequence counts for testing presence of amplicons")
     parser.add_argument("--max_qc_flags", type=int, required=True, help="Maximum number of soft fail QC flags allowable before sample is failed")
     parser.add_argument("--min_med_amp_count", type=int, required=True, help="Minimum median query sequence counts to consider an amplicon as present")
+    parser.add_argument("--groups", type=str, required=True, help="Comma-separated amplicon prefixes, e.g. rpt1_pool1_,rpt1_pool2_,rpt2_pool1_,rpt2_pool2_")
 
     args = parser.parse_args()
     main(args)
