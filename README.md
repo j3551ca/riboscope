@@ -33,7 +33,13 @@ nextflow run BCCDC-PHL/riboscope \
 
 ## Usage
 
-The following command can be used to run the pipeline:
+To test the pipeline is functioning as expected, a test profile is used with dataset provided in `/tests/data/` with subsampled raw reads, ribosomal repeat 1 of TPA reference sequence, gff3 file, primer bed file, and sequences to search for in raw reads as proxy for amplicon sequencing success. Results will be available in the directory riboscope is launched from under `riboscope_test_results`.
+
+```
+nextflow run BCCDC-PHL/riboscope -profile conda,test
+```
+
+The following command can be used to run the basic pipeline:
 
 ```
 nextflow run BCCDC-PHL/riboscope \
