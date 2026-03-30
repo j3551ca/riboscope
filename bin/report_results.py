@@ -72,7 +72,7 @@ def plot_amplicons(failed_amps):
 
     failed_order = failed_amps_wide.eq(1).sum(axis=1).sort_values(ascending=False)
     failed_amps_wide = failed_amps_wide.loc[failed_order.index]
-    display = failed_amps_wide.replace({0: "Pass", 1: "Fail"})
+    display = failed_amps_wide.apply(lambda col: col.map({0: "Pass", 1: "Fail", False: "Pass", True: "Fail"}))
 
     n_samples =len(failed_amps["sample_id"].unique())
     n_amplicons = (len(failed_amps.columns.unique())-1)
@@ -137,7 +137,7 @@ def plot_vcf(vcf_df):
     """
     n_feature = vcf_df["feature_name"].nunique()
     n_col = 2
-    n_row = (n_feature/n_col)
+    n_row = (n_feature / n_col) if n_feature > 0 else 10
 
     fig = px.scatter(vcf_df, 
             x = "feature_snv", 
@@ -151,7 +151,7 @@ def plot_vcf(vcf_df):
                         "sample_count":True, "pool":False},  # info shown on hover
             facet_col="feature_name",
             facet_col_wrap=n_col,
-            facet_row_spacing = 0.9,
+            facet_row_spacing = 0.2,
             log_y=True,
             title="rRNA SNVs Across Samples",
             template="plotly_white")
