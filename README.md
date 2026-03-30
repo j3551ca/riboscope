@@ -34,7 +34,7 @@ nextflow run BCCDC-PHL/riboscope \
 
 ## Usage
 
-To test the pipeline is functioning as expected, a test profile is used with dataset provided in `/tests/data/` with subsampled raw reads, ribosomal repeat 1 of TPA reference sequence, gff3 file, primer bed file, and sequences to search for in raw reads as proxy for amplicon sequencing success. Results will be available in the directory riboscope is launched from under `riboscope_test_results`.
+To test the pipeline is functioning as expected, a test profile is used with dataset provided in `/tests/data/` with subsampled raw reads of SRR34079400 & 5000 pairs of simulated reads, ribosomal repeat 1 of TPA reference sequence, gff3 file, primer bed file, and sequences to search for in raw reads as proxy for amplicon sequencing success. Results will be available in the directory riboscope is launched from under `riboscope_test_results`. An example of the output `results_report.html` has been included in `/tests/results` for reference. Note that the results are generated from a synthetic test dataset with excessively lenient QC thresholds and are solely meant to verify that the pipeline runs successfully. Results are not biologically meaningful and only intended to illustrate expected output formats. 
 
 ```
 nextflow run BCCDC-PHL/riboscope -profile conda,test
@@ -106,7 +106,7 @@ NC_000919.1_ribo_rpt1 4718  A G 0.09  4730,7588,37,20 example_sample  ecoli_23S 
 
 ### Quality Control
 
-The `--apply_qc` parameter generates the `results_report.html` which reports SNPs across genomic features as well as QC results, aggregates results for all samples, summarizes QC (qc_summary.csv), and filters out SNPs from low quality samples or amplicons that did not pass the minimum count of unique sequences (see `--search_seqs`). There are a number of parameters that control QC pass/fail thresholds in the `nextflow.config` file. For example, the `--max_qc_flags` adjusts the maximum allowable number of "soft fail" QC flags allowable before sample is failed. Currently, samples instantly fail if no amplicons are detected, number of reads are insufficient (< min_map), or there is insufficient pathogen content detected (see `filter_qc.py`).
+The `--apply_qc` parameter generates the `results_report.html` which reports SNPs across genomic features as well as QC results, aggregates results for all samples, summarizes QC (qc_summary.csv), and filters out SNPs from low quality samples or amplicons that did not pass the minimum count of unique sequences (see `--search_seqs`). There are a number of parameters that control QC pass/fail thresholds in the `nextflow.config` file. For example, the `--max_qc_flags` adjusts the maximum allowable number of "soft fail" QC flags allowable before sample is failed. Currently, samples instantly fail if no amplicons are detected, number of reads are insufficient (< min_map), or there is insufficient pathogen content detected (see `filter_qc.py`). 
 
 ### Provenance
 
