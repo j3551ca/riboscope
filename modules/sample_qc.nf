@@ -36,7 +36,8 @@ process qc_filter {
     --min_pos_count ${params.min_pos_count} \
     --min_med_amp_count  ${params.min_amplicon_count} \
     --max_qc_flags ${params.max_qc_flags} \
-    --qc_output ${params.qc_output}
+    --qc_output ${params.qc_output} \
+    --groups ${params.amplicon_groups}
     """
 }
 

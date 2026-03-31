@@ -67,6 +67,22 @@ process detect_ribo_repeats {
     """
 }
 
+process unpack_test_kraken_db {
+    
+    input:
+    val(db_url)
+
+    output:
+    path("db")
+
+    script:
+    """
+    mkdir db
+    curl -L "$db_url" -o db.tar.gz
+    tar -xzf db.tar.gz -C db --strip-components=1
+    """
+}
+
 process kraken2 {
 
     tag { sample_id }

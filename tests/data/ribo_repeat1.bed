@@ -1,0 +1,8 @@
+NC_000919.1_ribo_rpt1	0	26	rpt1_pool1_LEFT	0	+
+NC_000919.1_ribo_rpt1	3350	3378	rpt1_pool1_RIGHT	0	-
+NC_000919.1_ribo_rpt1	3294	3317	rpt1_pool2_LEFT	0	+
+NC_000919.1_ribo_rpt1	6472	6499	rpt1_pool2_RIGHT	0	-
+NC_000919.1_ribo_rpt1	0	26	rpt2_pool1_LEFT	0	+
+NC_000919.1_ribo_rpt1	3350	3378	rpt2_pool1_RIGHT	0	-
+NC_000919.1_ribo_rpt1	3294	3317	rpt2_pool2_LEFT	0	+
+NC_000919.1_ribo_rpt1	6472	6499	rpt2_pool2_RIGHT	0	-
