@@ -104,6 +104,9 @@ Users may optionally adjust reported positions of mutations according to where t
 CHROM POS REF ALT AF  DP4 SAMPLE_ID FEATURE_NAME  FEATURE_STRAND  FEATURE_POS
 NC_000919.1_ribo_rpt1 4718  A G 0.09  4730,7588,37,20 example_sample  ecoli_23S + 2100
 
+An example of the SNP plot in the results report with GFF3 file provided that specifies 16S, 23S, and 5S genes:
+<img src="/assets/riboscope_example_snp_plot.png" alt="workflow" width="750" height="750"> 
+
 ### Quality Control
 
 The `--apply_qc` parameter generates the `results_report.html` which reports SNPs across genomic features as well as QC results, aggregates results for all samples, summarizes QC (qc_summary.csv), and filters out SNPs from low quality samples or amplicons that did not pass the minimum count of unique sequences (see `--search_seqs`). There are a number of parameters that control QC pass/fail thresholds in the `nextflow.config` file. For example, the `--max_qc_flags` adjusts the maximum allowable number of "soft fail" QC flags allowable before sample is failed. Currently, samples instantly fail if no amplicons are detected, number of reads are insufficient (< min_map), or there is insufficient pathogen content detected (see `filter_qc.py`). 
